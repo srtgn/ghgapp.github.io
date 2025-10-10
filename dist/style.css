@@ -1,0 +1,565 @@
+* {
+  font-size: 100%;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+ }
+
+.logo {
+  position: absolute;
+  width: 35px;
+  height: 35px;
+  top: 8px;
+  right: 120px;
+  border-radius: 4px;
+}
+
+.active, .logo:hover {
+  transform: scale(1.1);
+  border: 1px solid rgba(81, 203, 238, 1);
+  filter: brightness(120%)
+}
+
+#cesiumContainer {
+  position: absolute;
+  top: 0; 
+  left: 0;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+@media screen and (max-width: 375px) { 
+  html { zoom: 100%; }
+  }
+  
+  @media screen and (max-width: 400px) { 
+  html { zoom: 100%; }
+  }
+  
+  @media screen and (max-width: 800px) { 
+  html { zoom: 100%; }
+  }
+  
+  @media screen and (min-width: 1901px) { 
+  html { zoom: 100%; }
+  }
+
+/* .cesium-viewer-toolbar {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+} */
+
+#button1 {
+  position: absolute;
+  top: 0;
+  left: 315px;
+  height: 30px;
+  width: 120px;
+  font-family: sans-serif;
+  background-color:black;
+  color: white;
+  overflow: hidden;
+  opacity: 0.8;
+  border-radius: 4px;
+}
+
+#button2 {
+  position: absolute;
+  top: 0;
+  left: 445px;
+  height: 30px;
+  width: 120px;
+  font-family: sans-serif;
+  background-color:black;
+  color: white;
+  overflow: hidden;
+  opacity: 0.8;
+  border-radius: 4px;
+}
+
+.active, .button:hover {
+  transform: scale(1.1);
+  border: 1px solid rgba(81, 203, 238, 1);
+  filter: brightness(120%)
+}
+
+.cesium-infoBox {
+  position: absolute;
+  width: 300px;
+  top: 100px;
+  right: 5px;
+}
+
+#scene {
+    position: absolute;
+    top: 0px;
+    left: 7px;
+    width: 300px;
+    height: 30px;
+}
+
+.cesium-button2 {
+  position: absolute;
+  top: 5px;
+  left: 450px;
+  height: 40px;
+  background-color:black;
+  color: white;
+  overflow: hidden;
+  opacity: 0.8;
+  border-radius: 4px;
+}
+
+.cesium-button3 {
+  position: absolute;
+  top: 5px;
+  left: 530px;
+  height:40px;
+  background-color:black;
+  color: white;
+  overflow: hidden;
+  opacity: 0.8;
+  border-radius: 4px;
+}
+
+.cesium-button4 {
+  position: absolute;
+  top: 5px;
+  left: 970px;
+  height:40px;
+  background-color:black;
+  color: white;
+  overflow: hidden;
+  opacity: 0.8;
+  border-radius: 4px;
+}
+
+.cesium-button5 {
+  position: absolute;
+  top: 350px;
+  left: 10px;
+  height:40px;
+  width:250px;
+  background-color:black;
+  color: white;
+  overflow: hidden;
+  opacity: 0.8;
+  border-radius: 4px;
+}
+
+.active, .cesium-button5:hover {
+  background-color: #555;
+}
+
+.cesium-button6 {
+  position: absolute;
+  top: 390px;
+  left: 10px;
+  height:40px;
+  width:250px;
+  background-color:black;
+  color: white;
+  overflow: hidden;
+  opacity: 0.8;
+  border-radius: 4px;
+}
+
+.active, .cesium-button6:hover {
+  background-color: #555;
+}
+
+.cesium-button7 {
+  position: absolute;
+  top: 430px;
+  left: 10px;
+  height:40px;
+  width:250px;
+  background-color:black;
+  color: white;
+  overflow: hidden;
+  opacity: 0.8;
+  border-radius: 4px;
+}
+
+.active, .cesium-button7:hover {
+  background-color: #555;
+}
+
+.cesium-button8 {
+  position: absolute;
+  top: 165px;
+  left: 970px;
+  height:40px;
+  width:250px;
+  background-color:black;
+  color: white;
+  overflow: hidden;
+  opacity: 0.8;
+  border-radius: 4px;
+}
+
+/* #container {
+    height: 400px; 
+} */
+
+.highcharts-figure, .highcharts-data-table table {
+    position: absolute;
+    bottom: 20px;
+    left: 200px;
+    min-width: 1710px; /*1870px*/
+    max-width: 1710px;
+    margin: 1em auto;
+    opacity: 0.9;
+}
+
+.csvData1 {
+    position: fixed;
+    top: 100px;
+    left: 100px;
+}
+
+.csvData4 {
+  position: fixed;
+  top: 100px;
+  left: 100px;
+}
+
+#container1 {
+  zoom: 80%;
+  height: 300px;
+}
+
+.highcharts-figure1,
+.highcharts-data-table table {
+  position: absolute;
+  top: 30px;
+  left: 10px;
+  min-width: 300px; /*1870px*/
+  max-width: 300px;
+  margin: 1em auto;
+  opacity: 0.9;
+}
+
+.highcharts-data-table table {
+    font-family: Verdana, sans-serif;
+    border-collapse: collapse;
+    border: 1px solid #ebebeb;
+    margin: 10px auto;
+    text-align: center;
+    width: 100%;
+    max-width: 500px;
+}
+
+.highcharts-data-table caption {
+    padding: 1em 0;
+    font-size: 1.2em;
+    color: #555;
+}
+
+.highcharts-data-table th {
+    font-weight: 600;
+    padding: 0.5em;
+}
+
+.highcharts-data-table td,
+.highcharts-data-table th,
+.highcharts-data-table caption {
+    padding: 0.5em;
+}
+
+.highcharts-data-table thead tr,
+.highcharts-data-table tr:nth-child(even) {
+    background: #f8f8f8;
+}
+
+.highcharts-data-table tr:hover {
+    background: #f1f7ff;
+}
+
+#container2 {
+  zoom: 80%;
+  height: 300px;
+}
+
+.highcharts-figure2,
+.highcharts-data-table table {
+  position: absolute;
+  min-width: 800px;
+  max-width: 1110px;
+  bottom: 20px;
+  margin: 1em auto;
+  left: 300px;
+  opacity: 0.8;
+}
+
+.highcharts-data-table table {
+    font-family: Verdana, sans-serif;
+    border-collapse: collapse;
+    border: 1px solid #ebebeb;
+    margin: 10px auto;
+    text-align: center;
+    width: 100%;
+    max-width: 500px;
+}
+
+.highcharts-data-table caption {
+    padding: 1em 0;
+    font-size: 5em;
+    color: #555;
+}
+
+.highcharts-data-table th {
+    font-weight: 1000;
+    padding: 0.5em;
+}
+
+.highcharts-data-table td,
+.highcharts-data-table th,
+.highcharts-data-table caption {
+    padding: 0.5em;
+}
+
+.highcharts-data-table thead tr,
+.highcharts-data-table tr:nth-child(even) {
+    background: #f8f8f8;
+}
+
+.highcharts-data-table tr:hover {
+    background: #f1f7ff;
+}
+
+#container3 {
+  zoom: 80%;
+  height: 300px;
+}
+
+.highcharts-figure3,
+.highcharts-data-table table {
+  position: absolute;
+  top: 30px;
+  left: 315px;
+  min-width: 250px; /*1870px*/
+  max-width: 250px;
+  margin: 1em auto;
+  opacity: 0.9;
+}
+
+.highcharts-data-table table {
+    font-family: Verdana, sans-serif;
+    border-collapse: collapse;
+    border: 1px solid #ebebeb;
+    margin: 10px auto;
+    text-align: center;
+    width: 100%;
+    max-width: 500px;
+}
+
+.highcharts-data-table caption {
+    padding: 1em 0;
+    font-size: 1.2em;
+    color: #555;
+}
+
+.highcharts-data-table th {
+    font-weight: 600;
+    padding: 0.5em;
+}
+
+.highcharts-data-table td,
+.highcharts-data-table th,
+.highcharts-data-table caption {
+    padding: 0.5em;
+}
+
+.highcharts-data-table thead tr,
+.highcharts-data-table tr:nth-child(even) {
+    background: #f8f8f8;
+}
+
+.highcharts-data-table tr:hover {
+    background: #f1f7ff;
+}
+
+.cesium-viewer-cesium3DTilesInspectorContainer {
+  visibility: hidden;
+  width: fit-content;
+  font-family: Verdana, sans-serif;
+  position: absolute;
+  top: 330px;
+  left: 5px;
+  max-height: 600px; 
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.custom-infobox {
+  display:none;
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  height: 500px;
+  border-radius: 4px;
+  border: thick solid steelblue;
+  padding: 8px;
+  background: rgba(255,255,255,0.2);
+  pointer-events: none;
+}
+  
+.custom-infobox.open {
+  display: block;
+}
+
+.cesium-toolbar-button {
+  top: 1px;
+}
+
+#container4 {
+  zoom: 80%;
+  height: 300px;
+}
+
+.highcharts-figure4,
+.highcharts-data-table table {
+  position: absolute;
+  top: 30px;
+  left: 570px;
+  min-width: 250px; /*1870px*/
+  max-width: 250px;
+  margin: 1em auto;
+  opacity: 0.9;
+}
+
+#container5 {
+  zoom: 80%;
+  height: 300px;
+}
+
+.highcharts-figure5,
+.highcharts-data-table table {
+  position: absolute;
+  top: 30px;
+  left: 825px;
+  min-width: 250px; /*1870px*/
+  max-width: 250px;
+  margin: 1em auto;
+  opacity: 0.9;
+}
+
+#slider {
+  position: absolute;
+  bottom: 115px;
+  width: 250px;
+  left: 5px;
+  background: rgba(42, 42, 42, 0.8);
+  color: white;
+  padding: 4px;
+  border-radius: 4px;
+}
+#slider input {
+  vertical-align: middle;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  width: 30;
+}
+
+.my-legend1 {
+  display: hidden;
+  position: absolute;
+  width: 250px;
+  bottom: 20px; /*top: 470px*/
+  right: 310px; /*left: 10px*/
+  opacity: 0.8;
+  background: black;
+  border-radius: 4px;
+  margin: 1em auto;
+}
+
+.my-legend1 .legend-title1 {
+  font-family: sans-serif;
+  text-align: left;
+  margin-bottom: 5px;
+  font-weight: bold;
+  font-size: 90%;
+  color: white;
+  }
+.my-legend1 .legend-scale1 ul {
+  margin: 0;
+  margin-bottom: 5px;
+  padding: 0;
+  float: left;
+  list-style: none;
+  }
+.my-legend1 .legend-scale1 ul li {
+  font-family: sans-serif;
+  font-size: 80%;
+  list-style: none;
+  margin-left: 0;
+  line-height: 18px;
+  margin-bottom: 2px;
+  color: white;
+  }
+.my-legend1 ul.legend-labels1 li span {
+  display: block;
+  float: left;
+  height: 16px;
+  width: 30px;
+  margin-right: 5px;
+  margin-left: 0;
+  border: 1px solid #999;
+  }
+.my-legend1 a {
+  color: #777;
+  }
+
+.my-legend2 {
+  display: hidden;
+  position: absolute;
+  width: 200px;
+  bottom: 165px; /*top: 470px*/
+  right: 310px; /*left: 10px*/
+  opacity: 0.8;
+  background: black;
+  border-radius: 4px;
+  margin: 1em auto;
+}
+
+.my-legend2 .legend-title2 {
+  font-family: sans-serif;
+  text-align: left;
+  margin-bottom: 5px;
+  font-weight: bold;
+  font-size: 90%;
+  color: white;
+  }
+.my-legend2 .legend-scale2 ul {
+  margin: 0;
+  margin-bottom: 5px;
+  padding: 0;
+  float: left;
+  list-style: none;
+  }
+.my-legend2 .legend-scale2 ul li {
+  font-family: sans-serif;
+  font-size: 80%;
+  list-style: none;
+  margin-left: 0;
+  line-height: 18px;
+  margin-bottom: 2px;
+  color: white;
+  }
+.my-legend2 ul.legend-labels2 li span {
+  display: block;
+  float: left;
+  height: 16px;
+  width: 30px;
+  margin-right: 5px;
+  margin-left: 0;
+  border: 1px solid #999;
+  }
+.my-legend2 a {
+  color: #777;
+  }

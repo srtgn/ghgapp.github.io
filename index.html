@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1380px">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.88/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.88/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="dist/style.css">
+  <link rel="stylesheet" href="dist/baseLayerPicker.css">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.0/knockout-min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+  <script type="text/javascript" src="https://unpkg.com/default-passive-events"></script>
+
+  <script src="https://code.highcharts.com/stock/highstock.js"></script>
+  <script src="https://code.highcharts.com/modules/series-label.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/export-data.js"></script>
+  <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+  <script src="https://code.highcharts.com/modules/offline-exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/series-label.js"></script>
+  
+  <script src="https://code.highcharts.com/highcharts-3d.js"></script>
+  <script src="https://code.highcharts.com/modules/cylinder.js"></script>
+
+  <script src="https://code.highcharts.com/modules/data.js"></script>
+
+  <!-- <script src="https://www.delphi.ai/chatWidgetBundle.js" id="chat-widget" data-secret1="f20faba0-0ff7-4ca0-a2f9-4767e1326943" title="ChatGHG"></script> -->
+
+  <script id="delphi-bubble-script">
+    window.delphi = {...(window.delphi ?? {}) };
+    window.delphi.bubble = {
+    config: "f20faba0-0ff7-4ca0-a2f9-4767e1326943",
+    overrides: {
+        landingPage: "OVERVIEW",
+    },
+    trigger: {
+        color: "#FF6A27",
+    },
+    };
+</script>
+
+<script id="delphi-bubble-bootstrap" src=https://embed.delphi.ai/loader.js></script>
+
+  <!-- <script src="jquery-csv.js"></script> -->
+
+</head>
+
+<body>
+    <div id="cesiumContainer"></div>
+    <div>
+    <div id="toolbar">
+        <select class="cesium-button" id="scene" title="Select Scene">
+            <option value="0" selected>GHG emission</option>
+            <option value="1" >Potential for Intervention</option>
+        </select>
+        <table class="infoPanel">
+            <!-- <tbody>
+            <tr>
+                <td>Click on a building to see more information</td>
+            </tr>
+            </tbody> -->
+        </table>
+    </div>
+
+    <div id="toolbar">
+        <button id="button1" class="button" onclick="hideCharts()" title="Click to hide charts">Hide charts</button>
+        <button id="button2" class="button" onclick="showCharts()" title="Click to show charts">Show charts</button>
+        <a href="https://udtghg.github.io/"><img class="logo" src="images/icon.jpeg" alt="GHG Logo" title="Instructions"></a>
+    </div>
+    
+    <div id="toolbar">
+        <select class="cesium-button5" id="PlanningArea" title="Filter using Planning Areas of Singapore">
+            <option value="0">Planning Area</option>
+            <option value="1">ANG MO KIO</option>
+            <option value="2">BEDOK</option>
+            <option value="3">BISHAN</option>
+            <option value="4">BOON LAY</option>
+            <option value="5">BUKIT BATOK</option>
+            <option value="6">BUKIT MERAH</option>
+            <option value="7">BUKIT PANJANG</option>
+            <option value="8">BUKIT TIMAH</option>
+            <option value="9">CHANGI</option>
+            <option value="10">CHANGI BAY</option>
+            <option value="11">CHOA CHU KANG</option>
+            <option value="12">CLEMENTI</option>
+            <option value="13">DOWNTOWN CORE</option>
+            <option value="14">GEYLANG</option>
+            <option value="15">HOUGANG</option>
+            <option value="16">JURONG EAST</option>
+            <option value="17">JURONG WEST</option>
+            <option value="18">KALLANG</option>
+            <option value="19">LIM CHU KANG</option>
+            <option value="20">MANDAI</option>
+            <option value="21">MARINA EAST</option>
+            <option value="22">MARINA SOUTH</option>
+            <option value="23">MARINE PARADE</option>
+            <option value="24">MUSEUM</option>
+            <option value="25">NEWTON</option>
+            <option value="26">NOVENA</option>
+            <option value="27">ORCHARD</option>
+            <option value="28">OUTRAM</option>
+            <option value="29">PASIR RIS</option>
+            <option value="30">PAYA LEBAR</option>
+            <option value="31">PIONEER</option>
+            <option value="32">PUNGGOL</option>
+            <option value="33">QUEENSTOWN</option>
+            <option value="34">RIVER VALLEY</option>
+            <option value="35">ROCHOR</option>
+            <option value="36">SELETAR</option>
+            <option value="37">SEMBAWANG</option>
+            <option value="38">SENGKANG</option>
+            <option value="39">SERANGOON</option>
+            <option value="40">SIMPANG</option>
+            <option value="41">SINGAPORE RIVER</option>
+            <option value="42">SOUTHERN ISLANDS</option>
+            <option value="43">STRAITS VIEW</option>
+            <option value="44">SUNGEI KADUT</option>
+            <option value="45">TAMPINES</option>
+            <option value="46">TANGLIN</option>
+            <option value="47">TENGAH</option>
+            <option value="48">TOA PAYOH</option>
+            <option value="49">TUAS</option>
+            <option value="50">WESTERN ISLANDS</option>
+            <option value="51">WOODLANDS</option>
+            <option value="52">YISHUN</option>
+        </select>
+        <table class="infoPanel">
+            <!-- <tbody>
+            <tr>
+                <td>Click on a building to see more information</td>
+            </tr>
+            </tbody> -->
+        </table>
+    </div>
+
+    <div id="toolbar">
+        <select class="cesium-button6" id="BuiltYear" title="Filter using Built Year">
+          <option value="0">Built year</option>
+          <option value="1">2024 &gt;</option>
+          <option value="2">2010 &gt;</option>
+          <option value="3">2000 &gt;</option>
+          <option value="4">1990 &gt;</option>
+          <option value="5">1980 &gt;</option>
+          <option value="6">1970 &gt;</option>
+        </select>
+        <table class="infoPanel">
+          <!-- <tbody>
+            <tr>
+              <td>Click on a building to see more information</td>
+            </tr>
+          </tbody> -->
+        </table>
+      </div>
+    
+      <div id="toolbar">
+        <select class="cesium-button7" id="Typology" title="Filter using Building Typology">
+            <option value="0">Typology</option>
+            <option value="1">academic</option>
+            <option value="2">agriculture</option>
+            <option value="3">civic</option>
+            <option value="4">commercial</option>
+            <option value="5">healthcare</option>
+            <option value="6">hospital</option>
+            <option value="7">industrial</option>
+            <option value="8">infrastructure</option>
+            <option value="9">mixed</option>
+            <option value="10">MRT</option>
+            <option value="11">office</option>
+            <option value="12">park</option>
+            <option value="13">parking</option>
+            <option value="14">port/airport</option>
+            <option value="15">recreation</option>
+            <option value="16">religious</option>
+            <option value="17">reserve</option>
+            <option value="18">residential</option>
+            <option value="19">roof</option>
+            <option value="20">transportation</option>
+            <option value="21">utility</option>
+        </select>
+        <table class="infoPanel">
+          <!-- <tbody>
+            <tr>
+              <td>Click on a building to see more information</td>
+            </tr>
+          </tbody> -->
+        </table>
+      </div>
+
+      <div id="slider" style="display: none;" title="Assign weightage for parameters">
+        <table>
+          <tbody>
+            <tr>
+              <td>Age</td>
+              <td>
+                <input type="range" min="0" max="5" step="1" size="5" data-bind="value: age, valueUpdate: 'input'">
+                <input type="text" size="2" data-bind="value: age">
+              </td>
+            </tr>
+            <tr>
+              <td>GHG</td>
+              <td>
+                <input type="range" min="0" max="5" step="1" data-bind="value: ghg, valueUpdate: 'input'">
+                <input type="text" size="2" data-bind="value: ghg">
+              </td>
+            </tr>
+            <tr>
+              <td>Lift</td>
+              <td>
+                <input type="range" min="0" max="5" step="1" data-bind="value: lift, valueUpdate: 'input'">
+                <input type="text" size="2" data-bind="value: lift">
+              </td>
+            </tr>
+            <tr>
+              <td>Light</td>
+              <td>
+                <input type="range" min="0" max="5" step="1" data-bind="value: light, valueUpdate: 'input'">
+                <input type="text" size="2" data-bind="value: light">
+              </td>
+            </tr>
+            <tr>
+              <td>Paint</td>
+              <td>
+                <input type="range" min="0" max="5" step="1" data-bind="value: paint, valueUpdate: 'input'">
+                <input type="text" size="2" data-bind="value: paint">
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure class="highcharts-figure1">
+        <div class="box" id="container1" style="display:none;"></div>
+      </figure>
+    
+      <figure class="highcharts-figure2">
+        <div class="box" id="container2" style="display:none;"></div>
+      </figure>
+    
+      <figure class="highcharts-figure3">
+        <div class="box" id="container3" style="display:none;"></div>
+      </figure>
+
+      <figure class="highcharts-figure4">
+        <div class="box" id="container4" style="display:none;"></div>
+      </figure>
+
+      <figure class="highcharts-figure5">
+        <div class="box" id="container5" style="display:none;"></div>
+      </figure>
+
+      <figure class='my-legend1'>
+        <div id="legend1">
+          <div class='legend-title1' title="Legend - GHG emissions">Average monthly household GHG emissions</div>
+            <div class='legend-scale1'>
+              <ul class='legend-labels1'>
+                <li><span style='background:#FF0000;'></span>Very high [Above 201 kg CO2e/kWh]</li>
+                <li><span style='background:#FFA500;'></span>High [187 - 201 kg CO2e/kWh]</li>
+                <li><span style='background:#FFFF00;'></span>Moderate [166 - 187 kg CO2e/kWh]</li>
+                <li><span style='background:#00FFFF;'></span>Low [135 - 166 kg CO2e/kWh]</li>
+                <li><span style='background:#0000FF;'></span>Very Low [Below 135 kg CO2e/kWh]</li>
+              </ul>
+            </div>
+        </div>
+      </figure>
+
+      <figure class='my-legend2'>
+        <div id="legend2" style="display: none;">
+          <div class='legend-title2' title="Legend - Potential for Intervention">Potential for Intervention</div>
+            <div class='legend-scale2'> 
+              <ul class='legend-labels2'>
+                <li><span style='background:rgb(123,50,148);'></span>Very high</li>
+                <li><span style='background:rgb(194,165,207);'></span>High</li>
+                <li><span style='background:rgb(247,247,247);'></span>Moderate</li>
+                <li><span style='background:rgb(166,219,160);'></span>Low</li>
+                <li><span style='background:rgb(0,136,55);'></span>Very Low</li>
+              </ul>
+            </div>
+        </div>
+      </figure>
+
+    <script>
+       //Cesium.Ion.defaultAccessToken = '<eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI4MDQ1ZmFiOS1iMmRlLTRmNjctOGNmMi00MGQ0NjJmYmRhMGMiLCJpZCI6NTg2MzgsImlhdCI6MTY3NjE5MzAzMH0.O81hySuWL6g3hfPvtqwrLvT6FO6LJ7q3gIEknOQOe1o>';
+        Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkNDNhZTIyOC1hYzQzLTQzZDMtOGE1ZC1mMDBhZjdlOGU2Y2QiLCJpZCI6NTg2MzgsImlhdCI6MTY0NjYzNjA4NX0.FTlrlNLSB7BF4-xczUdHpY5ppGIcb6-Ej7X1pZw73Eo";
+
+        var viewer = new Cesium.Viewer('cesiumContainer', {
+        contextOptions: {
+            requestWebgl2: true,
+        },
+        msaaSamples: 4,
+        baseLayerPicker: true,
+        vrButton: true,
+        geocoder: false,
+        navigationHelpButton: false,
+        //terrain: Cesium.Terrain.fromWorldTerrain(),
+        terrainShadows: Cesium.ShadowMode.ENABLED,
+        selectionIndicator: true,
+        shadows: true,
+        timeline: true,
+        sceneModePicker: true,
+        imageryProvider: new Cesium.MapboxStyleImageryProvider({
+            //mapId: 'mapbox.mapbox-streets-v8',
+            styleId: 'navigation-night-v1',
+            accessToken: 'pk.eyJ1IjoicHJhZGVlcGFsdmEiLCJhIjoiY2xtenpwcmw3MW5yMTJtcXZvN2VpcG9nNCJ9.R713sEp5UCwB_vT33WMCYg',
+            //fileExtension: "jpg",
+            skipLevelOfDetail: true,
+            baseScreenSpaceError: 1024,
+            skipScreenSpaceErrorFactor: 16,
+            skipLevels: 1,
+            immediatelyLoadDesiredLevelOfDetail: false,
+            loadSiblings: false,
+            cullWithChildrenBounds: true,
+            credit:
+            "Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.",
+        })
+        // imageryProviderViewModels : providerViewModels,
+        // selectedImageryProviderViewModel : providerViewModels[1],
+        // terrainProviderViewModels : terrainViewModels,
+        // selectedTerrainProviderViewModel : terrainViewModels[0]
+        });
+
+        // imageryProvider: new Cesium.OpenStreetMapImageryProvider({
+        //     url: "https://stamen-tiles.a.ssl.fastly.net/watercolor/",
+        //     //url: "http://maps.stamen.com/toner/",
+        //     fileExtension: "jpg",
+        //     skipLevelOfDetail: true,
+        //     baseScreenSpaceError: 1024,
+        //     skipScreenSpaceErrorFactor: 16,
+        //     skipLevels: 1,
+        //     immediatelyLoadDesiredLevelOfDetail: false,
+        //     loadSiblings: false,
+        //     cullWithChildrenBounds: true,
+        //     credit:
+        //     "Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.",
+        // })
+
+        var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        viewer.extend(Cesium.viewerCesium3DTilesInspectorMixin);
+        var inspectorViewModel = viewer.cesium3DTilesInspector.viewModel;
+
+        var tileset = new Cesium.Cesium3DTileset({
+            //url: "./tileset/tileset.json",
+            //url: Cesium.IonResource.fromAssetId(1804651),
+            url: Cesium.IonResource.fromAssetId(2279028),
+        });
+        viewer.scene.primitives.add(tileset);
+
+        Cesium.when(tileset.readyPromise).then(function (tileset) { viewer.flyTo(tileset) });
+        //document.querySelector(".infoPanel").style.visibility = "hidden";
+
+        var viewModel = {
+            age: ko.observable(1),
+            ghg: ko.observable(1),
+            lift: ko.observable(1),
+            light: ko.observable(1),
+            paint: ko.observable(1)
+        };
+
+        const slider = document.getElementById("slider");
+        ko.applyBindings(viewModel, slider);
+
+        slider.onchange = function () {
+            tileset.tileLoad.addEventListener(function(tile) {
+            var content = tile.content;
+            for (var i = 0; i < content.featuresLength; ++i) {
+                var feature = content.getFeature(i);
+                var Name_value = feature.getProperty('Name');
+                var N_age_value = feature.getProperty('N_age');
+                var N_ghg_value = feature.getProperty('N_ghg');
+                var N_lift_value = feature.getProperty('N_lift');
+                var N_light_value = feature.getProperty('N_light');
+                var N_paint_value = feature.getProperty('N_paint');
+                var agg = Number(((viewModel.age()*N_age_value)+(viewModel.ghg()*N_ghg_value)+(viewModel.lift()*N_lift_value)+(viewModel.light()*N_light_value)+(viewModel.paint()*N_paint_value)).toFixed(1));
+                feature.setProperty('Agg_pot_RE2', agg);
+                feature.setProperty('WT_age', viewModel.age());
+                feature.setProperty('WT_ghg', viewModel.ghg());
+                feature.setProperty('WT_lift', viewModel.lift());
+                feature.setProperty('WT_light', viewModel.light());
+                feature.setProperty('WT_paint', viewModel.paint());
+                var New_Agg_pot_RE_value = feature.getProperty('Agg_pot_RE2');
+                //console.log('Feature Length :' + content.featuresLength);
+                //console.log('Agg_pot_RE value :' + feature.getProperty('Agg_pot_RE'));
+                //console.log('Agg_pot_RE2 value :' + New_Agg_pot_RE_value);
+                //console.log('Age weight :' + viewModel.age());
+                //console.log('GHG weight :' + viewModel.ghg());
+                //console.log('Lift weight :' + viewModel.lift());
+                //console.log('Light weight :' + viewModel.light());
+                //console.log('Paint weight :' + viewModel.paint());
+                colorByPotIntervention2();
+                // if (i === content.featuresLength - 1) {
+                //     console.log("Simulation Complete!");
+                //     break;
+                //     }
+                }
+            });
+            function colorByPotIntervention2() {
+                //document.querySelector(".infoPanel").style.visibility = "hidden";
+
+                tileset.style = new Cesium.Cesium3DTileStyle({
+                show: "Number(${HT}) > 0",
+                color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${Agg_pot_RE2}) >= 3.3', "color('rgb(123,50,148)')"],
+                            ['Number(${Agg_pot_RE2}) > 2.8', "color('rgb(194,165,207)')"],
+                            ['Number(${Agg_pot_RE2}) > 2.4', "color('rgb(247,247,247)')"],
+                            ['Number(${Agg_pot_RE2}) > 1.9', "color('rgb(166,219,160)')"],
+                            ['Number(${Agg_pot_RE2})> 0', "color('rgb(0,136,55)')"],
+                            ['Number(${Agg_pot_RE2}) === null', 'color("black")'],
+                            ['Number(${Agg_pot_RE2}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],
+                        ],
+                    },
+                })
+            };
+
+        }
+
+        colorByGHG();
+
+        function colorByGHG() {
+            document.querySelector(".infoPanel").style.visibility = "hidden";
+            var PlanningArea = document.getElementById("PlanningArea");
+            var BuiltYear = document.getElementById("BuiltYear");
+
+            PlanningArea.onchange = function () {
+            viewer.entities.removeAll();
+            var item = PlanningArea.options[PlanningArea.selectedIndex];
+            if (item && typeof item.onselect === "function") {
+                item.onselect();
+            }
+            var PArea = PlanningArea.options[PlanningArea.selectedIndex].text;
+            //console.log(PArea);
+  
+            if (PArea === "ANG MO KIO") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1525597.2401806074, 6193536.347679692, 149125.2884676803),
+                    orientation : {
+                        heading : 0.363754165161283,
+                        pitch : -0.7757221858301682,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "BEDOK") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1535563.9549119284, 6193212.569382821, 143180.97545097364),
+                    orientation : {
+                        heading : 0.05473679652531338,
+                        pitch : -0.8950934789875857,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "BISHAN") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1526469.0809303836, 6193354.854504245, 145951.83866744745),
+                    orientation : {
+                        heading : 0.08556230326699588,
+                        pitch : -0.5873346757758542,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "BOON LAY") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1511847.4393239345, 6199962.573286942, 139416.94582815038),
+                    orientation : {
+                        heading : 6.16074378672644,
+                        pitch : -0.7542025435447668,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "BUKIT BATOK") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1517560.7034770881, 6196839.401691163, 144181.45734084412),
+                    orientation : {
+                        heading : 6.19155700464731,
+                        pitch : -0.5623178046713679,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "BUKIT MERAH") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1523719.6557874552, 6195415.336037938, 136770.32405694394),
+                    orientation : {
+                        heading : 0.00852129976076732,
+                        pitch : -0.6707958694677698,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "BUKIT PANJANG") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1516183.3974007792, 6196617.941395652, 146939.3876925462),
+                    orientation : {
+                        heading : 0.6480467770185623,
+                        pitch : -0.5958904641425558,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "BUKIT TIMAH") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1520985.3329645772, 6195007.092250561, 142331.43776248794),
+                    orientation : {
+                        heading : 6.253914963301952,
+                        pitch : -0.5541706887252822,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "CHANGI") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1539398.7531037678, 6192888.053763051, 142071.64431814506),
+                    orientation : {
+                        heading : 0.6100898818419864,
+                        pitch : -0.6195480486709353,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "CHANGI BAY") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1539398.7531037678, 6192888.053763051, 142071.64431814506),
+                    orientation : {
+                        heading : 0.6100898818419864,
+                        pitch : -0.6195480486709353,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "CHOA CHU KANG") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1517073.4495938336, 6195788.100799899, 149628.85016282258),
+                    orientation : {
+                        heading : 6.014991118643982,
+                        pitch : -0.5944417988010509,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "CLEMENTI") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1515872.635230993, 6196114.417717841, 141205.2930047562),
+                    orientation : {
+                        heading : 0.4909461532394017,
+                        pitch : -0.5028262895025897,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "DOWNTOWN CORE") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1529870.280627715, 6193323.978963877, 139653.18323956445),
+                    orientation : {
+                        heading : 5.574747210253056,
+                        pitch : -0.7225374100954527,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "GEYLANG") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1532649.1209948815, 6193263.961008871, 141839.06808216427),
+                    orientation : {
+                        heading : 6.057743508086009,
+                        pitch : -0.7058412857052989,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "HOUGANG") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1531093.315737393, 6194778.595554239, 143986.10506909637),
+                    orientation : {
+                        heading : 0.050525157765334505,
+                        pitch : -0.6555724853165481,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "JURONG EAST") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1510986.4411352347, 6199849.565258595, 141665.78745727998),
+                    orientation : {
+                        heading : 0.6589734267830174,
+                        pitch : -0.6806042279919327,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "JURONG WEST") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1511390.883752196, 6199616.569468205, 141898.3470979351),
+                    orientation : {
+                        heading : 0.05972563348168958,
+                        pitch : -0.6970549602907683,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "KALLANG") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1529685.4133735828, 6193209.20529365, 140788.17944714523),
+                    orientation : {
+                        heading : 6.117096025001418,
+                        pitch : -0.5884985545107182,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "LIM CHU KANG") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1516023.2207870965, 6200677.291292846, 154050.04206239208),
+                    orientation : {
+                        heading : 5.853674437911887,
+                        pitch : -0.9960354628593233,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "MANDAI") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1522637.508015411, 6198131.470745413, 153156.5928121374),
+                    orientation : {
+                        heading : 6.163534049320141,
+                        pitch : -0.9631000018909628,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "MARINA EAST") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1530871.0376567338, 6196010.245959511, 137783.67675580195),
+                    orientation : {
+                        heading : 6.219984420300612,
+                        pitch : -0.8463183144980286,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "MARINA SOUTH") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1530174.7116423897, 6191440.0425604535, 142744.57521289506),
+                    orientation : {
+                        heading : 4.10606405695274,
+                        pitch : -0.47925624803222,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "MARINE PARADE") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1537394.7563374464, 6190071.337681496, 143367.18229625467),
+                    orientation : {
+                        heading : 5.3741644767027115,
+                        pitch : -0.5802898082957526,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "MUSEUM") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1526543.1453414315, 6192179.469486689, 141453.5445486829),
+                    orientation : {
+                        heading : 6.161273041534769,
+                        pitch : -0.5432143529155713,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "NEWTON") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1524330.3941745285, 6193582.021295506, 142744.67622017828),
+                    orientation : {
+                        heading : 0.5165446999227523,
+                        pitch : -0.7631311990821836,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "NOVENA") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1524808.2111423563, 6195493.196732305, 142428.24226674446),
+                    orientation : {
+                        heading : 0.3163279012767557,
+                        pitch : -0.708097878664085,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "ORCHARD") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1523842.7667765452, 6193961.955475085, 141963.67754379995),
+                    orientation : {
+                        heading : 0.6672453458379115,
+                        pitch : -0.6649650857975979,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "OUTRAM") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1524393.1477864631, 6193249.874931368, 140323.9324143096),
+                    orientation : {
+                        heading : 0.8493834025624398,
+                        pitch : -0.663041823298538,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "PASIR RIS") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1535257.3536689624, 6192257.026154991, 148184.08598970858),
+                    orientation : {
+                        heading : 0.8619292578143218,
+                        pitch : -0.6380082402026588,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "PAYA LEBAR") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1534245.8648139557, 6197072.805025841, 142663.73641394838),
+                    orientation : {
+                        heading : 0.09667478095382265,
+                        pitch : -0.813161935102471,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "PIONEER") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1507985.6473484873, 6202044.4551664535, 138829.93270703853),
+                    orientation : {
+                        heading : 0.09667471947066364,
+                        pitch : -0.8131613353669809,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "PUNGGOL") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1530972.0377360426, 6193303.865152666, 151501.05931424384),
+                    orientation : {
+                        heading : 0.6173240427177973,
+                        pitch : -0.6796996636237425,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "QUEENSTOWN") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1519280.9108445533, 6197908.475804392, 139885.97105586814),
+                    orientation : {
+                        heading : 0.5671041834065402,
+                        pitch : -0.9466510289299617,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "RIVER VALLEY") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1524295.2095737192, 6194137.777833404, 140987.49915167684),
+                    orientation : {
+                        heading : 0.284693009561785,
+                        pitch : -0.6957232350549627,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "ROCHOR") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1527402.8679723528, 6192286.866285777, 142558.1425123146),
+                    orientation : {
+                        heading : 6.229179783833051,
+                        pitch : -0.6368512649138554,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "SELETAR") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1530307.7607077349, 6194925.28739218, 150936.12522867077),
+                    orientation : {
+                        heading : 6.247998196820401,
+                        pitch : -0.7536473106979882,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "SEMBAWANG") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1521896.8045977745, 6195352.723910246, 156560.1093464642),
+                    orientation : {
+                        heading : 0.629718381528928,
+                        pitch : -0.653523392637013,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "SENGKANG") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1530528.8558806726, 6193636.983036237, 150500.95696633612),
+                    orientation : {
+                        heading : 0.3223445222629353,
+                        pitch : -0.8284762112134234,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "SERANGOON") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1529362.7172582655, 6196632.318486976, 144620.70733479492),
+                    orientation : {
+                        heading : 0.32234415925676796,
+                        pitch : -0.828475214171994,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "SIMPANG") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1525905.9531730986, 6193253.292759651, 156175.4437887451),
+                    orientation : {
+                        heading : 0.36620045037861626,
+                        pitch : -0.6157655920496845,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "SINGAPORE RIVER") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1525126.270472383, 6193205.689230438, 140946.99057327304),
+                    orientation : {
+                        heading : 0.2785082494620852,
+                        pitch : -0.7180559472308357,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "SOUTHERN ISLANDS") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1523563.9285849696, 6197661.920122766, 134848.73241375288),
+                    orientation : {
+                        heading : 0.8108944161803553,
+                        pitch : -0.9530801790434351,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "STRAITS VIEW") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1526309.300819057, 6192427.978577339, 139030.1163748225),
+                    orientation : {
+                        heading : 0.6919832528461463,
+                        pitch : -0.4567927121025517,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "SUNGEI KADUT") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1512893.0267198326, 6199871.35917411, 154219.22147032575),
+                    orientation : {
+                        heading : 1.1302891327466753,
+                        pitch : -0.8428215187577304,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "TAMPINES") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1536177.5453021487, 6193326.460311449, 143831.9536338787),
+                    orientation : {
+                        heading : 0.42888245688138227,
+                        pitch : -0.7091650898030775,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "TANGLIN") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1522218.4568836908, 6193969.340623324, 140932.77167102555),
+                    orientation : {
+                        heading : 0.4019648032951775,
+                        pitch : -0.5026703836764663,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "TENGAH") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1512954.8998146998, 6196370.112619023, 146920.09980603436),
+                    orientation : {
+                        heading : 0.1890146963837882,
+                        pitch : -0.5258883975946058,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "TOA PAYOH") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1526411.325759651, 6193695.721922018, 143726.8810613544),
+                    orientation : {
+                        heading : 0.38942930571364975,
+                        pitch : -0.5330657870014659,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "TUAS") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1515052.8960813887, 6203613.097556452, 138144.30923161213),
+                    orientation : {
+                        heading : 5.000498938272505,
+                        pitch : -0.758124694959772,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "WESTERN ISLANDS") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1508258.4390079742, 6207761.098570407, 126792.23807298625),
+                    orientation : {
+                        heading : 0.5834452790365265,
+                        pitch : -0.7879096258422109,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "WOODLANDS") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1520674.0636259413, 6195421.80738329, 154375.9427594266),
+                    orientation : {
+                        heading : 6.252843630953153,
+                        pitch : -0.5989168776935823,
+                        roll : 0.0
+                    }
+                });
+            } else if (PArea === "YISHUN") {
+                //console.log(PArea);
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1520028.27695579, 6196654.004244378, 158792.32923795484),
+                    orientation : {
+                        heading : 1.8000223182340411,
+                        pitch : -0.6609684254677433,
+                        roll : 0.0
+                    }
+                });
+            } else {
+                viewer.camera.flyTo({
+                    destination : new Cesium.Cartesian3(-1531298.9171078373, 6212878.92108351, 115108.3515753772),
+                    orientation : {
+                        heading : 6.222372753095958,
+                        pitch : -0.5957595110500433,
+                        roll : 0.0
+                    }
+                });
+            }
+
+            if (PArea === "Planning Area") {
+                tileset.style = new Cesium.Cesium3DTileStyle({
+                //show: "${feature['PLN_AREA_N']} === ''",
+                color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                })
+            } else {
+                BuiltYear.onchange = function () {
+                viewer.entities.removeAll();
+                var item = BuiltYear.options[BuiltYear.selectedIndex];
+                if (item && typeof item.onselect === "function") {
+                    item.onselect();
+                }
+                var BYear = BuiltYear.options[BuiltYear.selectedIndex].text;
+
+                Typology.onchange = function () {
+                viewer.entities.removeAll();
+                var item = Typology.options[Typology.selectedIndex];
+                if (item && typeof item.onselect === "function") {
+                    item.onselect();
+                }
+                var BType = Typology.options[Typology.selectedIndex].text;
+
+                if (BType === "Typology") {
+                    tileset.style = new Cesium.Cesium3DTileStyle({
+                        show: "${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
+                        color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                    });
+                } else if (BYear === "2024 >") {
+                    tileset.style = new Cesium.Cesium3DTileStyle({
+                        show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 2024 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
+                        color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                    });
+                } else if (BYear === "2010 >") {
+                    tileset.style = new Cesium.Cesium3DTileStyle({
+                        show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 2010 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
+                        color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                    });
+                } else if (BYear === "2000 >") {
+                    tileset.style = new Cesium.Cesium3DTileStyle({
+                        show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 2000 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
+                        color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                    });
+                } else if (BYear === "1990 >") {
+                    tileset.style = new Cesium.Cesium3DTileStyle({
+                        show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 1990 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
+                        color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                    });
+                } else if (BYear === "1980 >") {
+                    tileset.style = new Cesium.Cesium3DTileStyle({
+                        show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 1980 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
+                        color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                    });
+                } else if (BYear === "1970 >") {
+                    tileset.style = new Cesium.Cesium3DTileStyle({
+                        show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 1970 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
+                        color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                    });
+                } else if (BYear === "1960 >") {
+                    tileset.style = new Cesium.Cesium3DTileStyle({
+                        show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 1960 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
+                        color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                    });
+                } else {
+                    tileset.style = new Cesium.Cesium3DTileStyle({
+                        show: "Number(${HT}) < 500" ,
+                        color: {
+                        conditions: [
+                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
+                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
+                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
+                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
+                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
+                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
+                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                    });
+                }
+                }};
+            }
+            }};
+            Cesium.when(tileset.readyPromise).then(function (tileset) { viewer.flyTo(tileset) });
+
+        function colorByPotIntervention() {
+            document.querySelector(".infoPanel").style.visibility = "hidden";
+
+            tileset.style = new Cesium.Cesium3DTileStyle({
+            show: "Number(${HT}) > 0",
+            color: {
+                    conditions: [
+                        // ["${QC_sys0_kW} >= 1500", "color('red')"],
+                        ['Number(${Agg_pot_RE}) >= 3.8', "color('rgb(123,50,148)')"],
+                        ['Number(${Agg_pot_RE}) > 2.8', "color('rgb(194,165,207)')"],
+                        ['Number(${Agg_pot_RE}) > 2.4', "color('rgb(247,247,247)')"],
+                        ['Number(${Agg_pot_RE}) > 1.9', "color('rgb(166,219,160)')"],
+                        ['Number(${Agg_pot_RE})> 0', "color('rgb(0,136,55)')"],
+                        ['Number(${Agg_pot_RE}) === null', 'color("black")'],
+                        ['Number(${Agg_pot_RE}) === undefined', 'color("black")'],
+                        [true, "color('white', 0.3)"],  
+                    ],
+                },
+            })
+        };
+        Cesium.when(tileset.readyPromise).then(function (tileset) { viewer.flyTo(tileset) });
+
+
+        // Add event listeners to dropdown menu options
+        document.querySelector(".infoPanel").style.visibility = "hidden";
+        var scene = document.getElementById("scene");
+        var chart1 = document.getElementById('container1');
+        var chart2 = document.getElementById('container2');
+        var chart3 = document.getElementById('container3');
+        var chart4 = document.getElementById('container4');
+        var chart5 = document.getElementById('container5');
+        var legend1 = document.getElementById('legend1');
+        var legend2 = document.getElementById('legend2');
+
+        scene.options[0].onselect = function () {
+          colorByGHG()
+          chart1.style.display = '';
+          chart2.style.display = '';
+          chart3.style.display = '';
+          chart4.style.display = '';
+          chart5.style.display = '';
+          slider.style.display = 'none';
+          legend1.style.display = '';
+          legend2.style.display = 'none';
+        };
+
+        scene.options[1].onselect = function () {
+          colorByPotIntervention()
+          chart1.style.display = 'none';
+          chart2.style.display = 'none';
+          chart3.style.display = 'none';
+          chart4.style.display = 'none';
+          chart5.style.display = 'none';
+          slider.style.display = '';
+          legend1.style.display = 'none';
+          legend2.style.display = '';
+        };
+
+        scene.onchange = function () {
+            viewer.entities.removeAll();
+            var item = scene.options[scene.selectedIndex];
+            if (item && typeof item.onselect === "function") {
+                item.onselect();
+            }
+        };
+
+        colorByGHG();
+        Cesium.when(tileset.readyPromise).then(function (tileset) { viewer.flyTo(tileset) });
+        viewer._cesiumWidget._creditContainer.style.display = "none";
+
+
+        Highcharts.createElement('link', {
+        href: 'https://fonts.googleapis.com/css?family=Unica+One',
+        rel: 'stylesheet',
+        type: 'text/css'
+      }, null, document.getElementsByTagName('head')[0]);
+
+        Highcharts.theme = {
+            colors: ['#2b908f', '#90ee7e', '#f45b5b', '#7798BF', '#aaeeee', '#ff0066',
+            '#eeaaee', '#55BF3B', '#DF5353', '#7798BF', '#aaeeee'
+            ],
+            chart: {
+            backgroundColor: {
+                linearGradient: {
+                x1: 0,
+                y1: 0,
+                x2: 1,
+                y2: 1
+                },
+                stops: [
+                [0, '#2a2a2b'],
+                [1, '#3e3e40']
+                ]
+            },
+            style: {
+                fontFamily: '\'Unica One\', sans-serif'
+            },
+            plotBorderColor: '#606063'
+            },
+            title: {
+            text: 'Building Cooling load vs occupants - Year - 2018, 2019, 2020',
+            style: {
+                color: '#E0E0E3',
+                textTransform: 'uppercase',
+                fontSize: '20px'
+            }
+            },
+            subtitle: {
+            text: 'Measured data',
+            style: {
+                color: '#E0E0E3',
+                textTransform: 'uppercase'
+            }
+            },
+            xAxis: {
+            gridLineColor: '#707073',
+            labels: {
+                style: {
+                color: '#E0E0E3'
+                }
+            },
+            lineColor: '#707073',
+            minorGridLineColor: '#505053',
+            tickColor: '#707073',
+            title: {
+                style: {
+                color: '#A0A0A3'
+
+                }
+            }
+            },
+            yAxis: {
+            gridLineColor: '#707073',
+            labels: {
+                style: {
+                color: '#E0E0E3'
+                }
+            },
+            lineColor: '#707073',
+            minorGridLineColor: '#505053',
+            tickColor: '#707073',
+            tickWidth: 1,
+            title: {
+                style: {
+                color: '#A0A0A3'
+                }
+            }
+            },
+            tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            style: {
+                color: '#F0F0F0'
+            }
+            },
+            plotOptions: {
+            series: {
+                dataLabels: {
+                color: '#F0F0F3',
+                style: {
+                    fontSize: '35px'
+                }
+                },
+                marker: {
+                lineColor: '#333'
+                }
+            },
+            boxplot: {
+                fillColor: '#505053'
+            },
+            candlestick: {
+                lineColor: 'white'
+            },
+            errorbar: {
+                color: 'white'
+            }
+            },
+            legend: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            itemStyle: {
+                color: '#E0E0E3'
+            },
+            itemHoverStyle: {
+                color: '#FFF'
+            },
+            itemHiddenStyle: {
+                color: '#606063'
+            },
+            title: {
+                style: {
+                color: '#C0C0C0'
+                }
+            }
+            },
+            credits: {
+            style: {
+                color: '#666'
+            }
+            },
+            labels: {
+            style: {
+                color: '#707073'
+            }
+            },
+
+            drilldown: {
+            activeAxisLabelStyle: {
+                color: '#F0F0F3'
+            },
+            activeDataLabelStyle: {
+                color: '#F0F0F3'
+            }
+            },
+
+            navigation: {
+            buttonOptions: {
+                symbolStroke: '#DDDDDD',
+                theme: {
+                fill: '#505053'
+                }
+            }
+            },
+
+            // scroll charts
+            rangeSelector: {
+            buttonTheme: {
+                fill: '#505053',
+                stroke: '#000000',
+                style: {
+                color: '#CCC'
+                },
+                states: {
+                hover: {
+                    fill: '#707073',
+                    stroke: '#000000',
+                    style: {
+                    color: 'white'
+                    }
+                },
+                select: {
+                    fill: '#000003',
+                    stroke: '#000000',
+                    style: {
+                    color: 'white'
+                    }
+                }
+                }
+            },
+            inputBoxBorderColor: '#505053',
+            inputStyle: {
+                backgroundColor: '#333',
+                color: 'silver'
+            },
+            labelStyle: {
+                color: 'silver'
+            }
+            },
+
+            navigator: {
+            handles: {
+                backgroundColor: '#666',
+                borderColor: '#AAA'
+            },
+            outlineColor: '#CCC',
+            maskFill: 'rgba(255,255,255,0.1)',
+            series: {
+                color: '#7798BF',
+                lineColor: '#A6C7ED'
+            },
+            xAxis: {
+                gridLineColor: '#505053'
+            }
+            },
+
+            scrollbar: {
+            barBackgroundColor: '#808083',
+            barBorderColor: '#808083',
+            buttonArrowColor: '#CCC',
+            buttonBackgroundColor: '#606063',
+            buttonBorderColor: '#606063',
+            rifleColor: '#FFF',
+            trackBackgroundColor: '#404043',
+            trackBorderColor: '#404043'
+            }
+        };
+
+        // Apply the theme
+        Highcharts.setOptions(Highcharts.theme);
+
+        
+
+        setTimeout(function(){
+            handler.setInputAction(function onLeftClick(
+                movement
+            ) {
+                // Pick a new feature
+                var pickedFeature = viewer.scene.pick(movement.position);
+                if (!Cesium.defined(pickedFeature)) {
+                clickHandler(movement);
+                return;
+                }
+              
+                var B_year = Number(pickedFeature.getProperty("year"));
+                var E_2018 = Number(pickedFeature.getProperty("EC_AM_2018"));
+                var E_2019 = Number(pickedFeature.getProperty("EC_AM_2019"));
+                var E_2020 = Number(pickedFeature.getProperty("EC_AM_2020"));
+                var E_2022 = Number(pickedFeature.getProperty("EC_AM_2022"));
+                var E_2030 = E_2020 - (((E_2020 - E_2019))/E_2019);
+
+                var R_1 = Number(pickedFeature.getProperty("1room_sold"));
+                var R_2 = Number(pickedFeature.getProperty("2room_sold"));
+                var R_3 = Number(pickedFeature.getProperty("3room_sold"));
+                var R_4 = Number(pickedFeature.getProperty("4room_sold"));
+                var R_5 = Number(pickedFeature.getProperty("5room_sold"));
+                var R_Ex = Number(pickedFeature.getProperty("exec_sold"));
+                var R_Tot = Number(pickedFeature.getProperty("total_dwel"));
+
+                var EUI_1_2 = Number(pickedFeature.getProperty("E_1_2_R"));
+                var EUI_3 = Number(pickedFeature.getProperty("E_3_R"));
+                var EUI_4 = Number(pickedFeature.getProperty("E_4_R"));
+                var EUI_5_Ex = Number(pickedFeature.getProperty("E_5_Ex_R"));
+                var EUI_Condo = Number(pickedFeature.getProperty("E_Condos"));
+                var EUI_LandedH = Number(pickedFeature.getProperty("E_LandedH"));
+                var Pot_Int = Number(pickedFeature.getProperty("Agg_pot_RE"));
+                //console.log(Pot_Int)
+
+                // console.log(B_year);
+                // console.log(E_2018);
+                // console.log(E_2019);
+                // console.log(E_2020);
+                // console.log(E_2022);
+                
+                // console.log(R_1);
+                // console.log(R_2);
+                // console.log(R_3);
+                // console.log(R_4);
+                // console.log(R_5);
+                // console.log(R_Ex);
+                // console.log(R_Tot);
+
+                // console.log(EUI_1_2);
+                // console.log(EUI_3);
+                // console.log(EUI_4);
+                // console.log(EUI_5_Ex);
+                // console.log(EUI_Condo);
+                // console.log(EUI_LandedH);
+
+
+                if (E_2020 === 0){
+                //console.log("Empty E_2020");
+                
+                const distchart1 = Highcharts.chart('container1', {
+                        chart: {
+                            type: 'cylinder',
+                            options3d: {
+                                enabled: true,
+                                alpha: 15,
+                                beta: 15,
+                                depth: 50,
+                                viewDistance: 25
+                            }
+                        },
+                        title: {
+                            text: 'CO\u2082e Dashboard - Built year :'+ B_year
+                        },
+                        subtitle: {
+                            text: 'Source: ' +
+                                '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                                'target="_blank">EMA, 2023</a>'
+                        },
+                        xAxis: {
+                            categories: ['CO\u2082', 'CH\u2084', 'N\u20820', 'SF\u2086', 'NF\u2083', 'PFCs', 'HFCs', 'Total CO\u2082e'],
+                            title: {
+                                text: 'Emission groups'
+                            }
+                        },
+                        yAxis: {
+                            title: {
+                                margin: 20,
+                                text: 'kg CO\u2082/kWh'
+                            }
+                        },
+                        tooltip: {
+                            headerFormat: '<b>Group: {point.x}</b><br>'
+                        },
+                        plotOptions: {
+                            series: {
+                                depth: 25,
+                                colorByPoint: true
+                            }
+                        },
+                        series: [{
+                            data: [E_2022*0.4057, (E_2022*0.00202*25), 0, 0, 0, 0, 0, (E_2022*0.4057)+(E_2022*0.00202*25)],
+                            name: 'kg CO\u2082/kWh',
+                            showInLegend: false
+                        }]
+                    });
+
+
+                    const distchart3 = Highcharts.chart('container3', {
+                        chart: {
+                            type: 'cylinder',
+                            options3d: {
+                                enabled: true,
+                                alpha: 15,
+                                beta: 15,
+                                depth: 50,
+                                viewDistance: 25
+                            }
+                        },
+                        title: {
+                            text: 'Aircon CO\u2082e'
+                        },
+                        subtitle: {
+                            text: 'Source: ' +
+                                '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                                'target="_blank">EMA, 2023</a>'
+                        },
+                        xAxis: {
+                            categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
+                            title: {
+                                text: 'CO\u2082e emission'
+                            }
+                        },
+                        yAxis: {
+                            title: {
+                                margin: 20,
+                                text: 'kg CO\u2082/kWh'
+                            }
+                        },
+                        tooltip: {
+                            headerFormat: '<b>Group: {point.x}</b><br>'
+                        },
+                        plotOptions: {
+                            series: {
+                                depth: 25,
+                                colorByPoint: true
+                            }
+                        },
+                        series: [{
+                            data: [R_1*0.0936, R_2*0.0936*2, R_3*0.0936*3, R_4*0.0936*4, R_5*0.0936*4, R_Ex*0.0936*4, ((R_1*0.0936)+(R_2*0.0936*2)+(R_3*0.0936*3)+(R_4*0.0936*4)+(R_5*0.0936*4)+(R_Ex*0.0936*4))],
+                            name: 'kg CO\u2082/kWh',
+                            showInLegend: false
+                        }]
+                    });
+
+
+                    const distchart4 = Highcharts.chart('container4', {
+                    chart: {
+                        type: 'cylinder',
+                        options3d: {
+                            enabled: true,
+                            alpha: 15,
+                            beta: 15,
+                            depth: 50,
+                            viewDistance: 25
+                        }
+                    },
+                    title: {
+                        text: 'Refrigerator CO\u2082e'
+                    },
+                    subtitle: {
+                        text: 'Source: ' +
+                            '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                            'target="_blank">EMA, 2023</a>'
+                    },
+                    xAxis: {
+                        categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
+                        title: {
+                            text: 'CO\u2082e emission'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            margin: 20,
+                            text: 'kg CO\u2082/kWh'
+                        }
+                    },
+                    tooltip: {
+                        headerFormat: '<b>Group: {point.x}</b><br>'
+                    },
+                    plotOptions: {
+                        series: {
+                            depth: 25,
+                            colorByPoint: true
+                        }
+                    },
+                    series: [{
+                        data: [R_1*0.061, R_2*0.061, R_3*0.061, R_4*0.061, R_5*0.061, R_Ex*0.061, ((R_1*0.061)+(R_2*0.061)+(R_3*0.061)+(R_4*0.061)+(R_5*0.061)+(R_Ex*0.061))],
+                        name: 'kg CO\u2082/kWh',
+                        showInLegend: false
+                    }]
+                });
+
+                const distchart5 = Highcharts.chart('container5', {
+                        chart: {
+                            type: 'cylinder',
+                            options3d: {
+                                enabled: true,
+                                alpha: 15,
+                                beta: 15,
+                                depth: 50,
+                                viewDistance: 25
+                            }
+                        },
+                        title: {
+                            text: 'Water Heater CO\u2082e'
+                        },
+                        subtitle: {
+                            text: 'Source: ' +
+                                '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                                'target="_blank">EMA, 2023</a>'
+                        },
+                        xAxis: {
+                            categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
+                            title: {
+                                text: 'CO\u2082e emission'
+                            }
+                        },
+                        yAxis: {
+                            title: {
+                                margin: 20,
+                                text: 'kg CO\u2082/kWh'
+                            }
+                        },
+                        tooltip: {
+                            headerFormat: '<b>Group: {point.x}</b><br>'
+                        },
+                        plotOptions: {
+                            series: {
+                                depth: 25,
+                                colorByPoint: true
+                            }
+                        },
+                        series: [{
+                            data: [R_1*0.03, R_2*0.03, R_3*0.03, R_4*0.03, R_5*0.03, R_Ex*0.03, ((R_1*0.03)+(R_2*0.03)+(R_3*0.03)+(R_4*0.03)+(R_5*0.03)+(R_Ex*0.03))],
+                            name: 'kg CO\u2082/kWh',
+                            showInLegend: false
+                        }]
+                    });
+
+                    Highcharts.chart('container2', {
+                    
+                    title: {
+                        text: 'Electricity use trends & Forecast'
+                    },
+                    subtitle: {
+                    text: 'Singapore Energy Statistics 2023-EMA, Benchmarking Report 2022-BCA & Simulated in CEA',
+                    style: {
+                    color: '#E0E0E3',
+                    textTransform: 'uppercase'
+                    }
+                    },
+                    xAxis: {
+                    title: {
+                    text: 'Year'
+                    },
+                        categories: ['2018', '2019', '2022', '2030', '2040']
+                    },
+                    yAxis: {
+                    title: {
+                    text: 'Electricity use [kWh]'
+                    }
+                },
+                    labels: {
+                        items: [{
+                            html: 'Electricity use [kWh]',
+                            style: {
+                                left: '200px',
+                                top: '30px',
+                                color: ( // theme
+                                    Highcharts.defaultOptions.title.style &&
+                                    Highcharts.defaultOptions.title.style.color
+                                ) || 'black'
+                            }
+                        }]
+                    },
+                    series: [{
+                        type: 'column',
+                        name: 'Scenario 1: Low Energy-Use',
+                        data: [E_2018, E_2019, E_2022, E_2022*0.75, E_2022*0.5] 
+                    }, {
+                        type: 'column',
+                        name: 'Scenario 2: High Energy-Use',
+                        data: [E_2018, E_2019, E_2022, E_2022*1.25, E_2022*1.5]
+                    }, {
+                        type: 'spline',
+                        name: 'Baseline: Current trend',
+                        dashStyle: 'Dash',
+                        data: [E_2018, E_2019, E_2022, E_2022*0.9, E_2022*0.75],
+                        marker: {
+                            lineWidth: 2,
+                            lineColor: Highcharts.getOptions().colors[3],
+                            fillColor: 'white'
+                        }
+                }]
+                });
+
+                } if (E_2020 !== 0){
+                //console.log("E_2020 is not empty");
+
+                const distchart1 = Highcharts.chart('container1', {
+                    chart: {
+                        type: 'cylinder',
+                        options3d: {
+                            enabled: true,
+                            alpha: 15,
+                            beta: 15,
+                            depth: 50,
+                            viewDistance: 25
+                        }
+                    },
+                    title: {
+                        text: 'CO\u2082e Dashboard - Built year :'+ B_year
+                    },
+                    subtitle: {
+                        text: 'Source: ' +
+                            '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                            'target="_blank">EMA, 2023</a>'
+                    },
+                    xAxis: {
+                        categories: ['CO\u2082e', 'CH\u2084', 'N\u20820', 'SF\u2086', 'NF\u2083', 'PFCs', 'HFCs', 'Total CO\u2082e'],
+                        title: {
+                            text: 'Emission groups'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            margin: 20,
+                            text: 'kg CO\u2082/kWh'
+                        }
+                    },
+                    tooltip: {
+                        headerFormat: '<b>Group: {point.x}</b><br>'
+                    },
+                    plotOptions: {
+                        series: {
+                            depth: 25,
+                            colorByPoint: true
+                        }
+                    },
+                    series: [{
+                        data: [E_2020*0.4057, (E_2020*0.00202*25), 0, 0, 0, 0, 0, (E_2020*0.4057)+(E_2020*0.00202*25)],
+                        name: 'kg CO\u2082/kWh',
+                        showInLegend: false
+                    }]
+                });
+
+                const distchart3 = Highcharts.chart('container3', {
+                    chart: {
+                        type: 'cylinder',
+                        options3d: {
+                            enabled: true,
+                            alpha: 15,
+                            beta: 15,
+                            depth: 50,
+                            viewDistance: 25
+                        }
+                    },
+                    title: {
+                        text: 'Aircon CO\u2082e Dashboard'
+                    },
+                    subtitle: {
+                        text: 'Source: ' +
+                            '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                            'target="_blank">EMA, 2023</a>'
+                    },
+                    xAxis: {
+                        categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
+                        title: {
+                            text: 'CO\u2082e emission'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            margin: 20,
+                            text: 'kg CO\u2082/kWh'
+                        }
+                    },
+                    tooltip: {
+                        headerFormat: '<b>Group: {point.x}</b><br>'
+                    },
+                    plotOptions: {
+                        series: {
+                            depth: 25,
+                            colorByPoint: true
+                        }
+                    },
+                    series: [{
+                        data: [R_1*0.0936, R_2*0.0936*2, R_3*0.0936*3, R_4*0.0936*4, R_5*0.0936*4, R_Ex*0.0936*4, ((R_1*0.0936)+(R_2*0.0936*2)+(R_3*0.0936*3)+(R_4*0.0936*4)+(R_5*0.0936*4)+(R_Ex*0.0936*4))],
+                        name: 'kg CO\u2082/kWh',
+                        showInLegend: false
+                    }]
+                });
+
+                const distchart4 = Highcharts.chart('container4', {
+                    chart: {
+                        type: 'cylinder',
+                        options3d: {
+                            enabled: true,
+                            alpha: 15,
+                            beta: 15,
+                            depth: 50,
+                            viewDistance: 25
+                        }
+                    },
+                    title: {
+                        text: 'Refrigerator CO\u2082e'
+                    },
+                    subtitle: {
+                        text: 'Source: ' +
+                            '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                            'target="_blank">EMA, 2023</a>'
+                    },
+                    xAxis: {
+                        categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
+                        title: {
+                            text: 'CO\u2082e emission'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            margin: 20,
+                            text: 'kg CO\u2082/kWh'
+                        }
+                    },
+                    tooltip: {
+                        headerFormat: '<b>Group: {point.x}</b><br>'
+                    },
+                    plotOptions: {
+                        series: {
+                            depth: 25,
+                            colorByPoint: true
+                        }
+                    },
+                    series: [{
+                        data: [R_1*0.061, R_2*0.061, R_3*0.061, R_4*0.061, R_5*0.061, R_Ex*0.061, ((R_1*0.061)+(R_2*0.061)+(R_3*0.061)+(R_4*0.061)+(R_5*0.061)+(R_Ex*0.061))],
+                        name: 'kg CO\u2082/kWh',
+                        showInLegend: false
+                    }]
+                });
+
+                const distchart5 = Highcharts.chart('container5', {
+                        chart: {
+                            type: 'cylinder',
+                            options3d: {
+                                enabled: true,
+                                alpha: 15,
+                                beta: 15,
+                                depth: 50,
+                                viewDistance: 25
+                            }
+                        },
+                        title: {
+                            text: 'Water Heater CO\u2082e'
+                        },
+                        subtitle: {
+                            text: 'Source: ' +
+                                '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                                'target="_blank">EMA, 2023</a>'
+                        },
+                        xAxis: {
+                            categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
+                            title: {
+                                text: 'CO\u2082e emission'
+                            }
+                        },
+                        yAxis: {
+                            title: {
+                                margin: 20,
+                                text: 'kg CO\u2082/kWh'
+                            }
+                        },
+                        tooltip: {
+                            headerFormat: '<b>Group: {point.x}</b><br>'
+                        },
+                        plotOptions: {
+                            series: {
+                                depth: 25,
+                                colorByPoint: true
+                            }
+                        },
+                        series: [{
+                            data: [R_1*0.03, R_2*0.03, R_3*0.03, R_4*0.03, R_5*0.03, R_Ex*0.03, ((R_1*0.03)+(R_2*0.03)+(R_3*0.03)+(R_4*0.03)+(R_5*0.03)+(R_Ex*0.03))],
+                            name: 'kg CO\u2082/kWh',
+                            showInLegend: false
+                        }]
+                    });
+
+                Highcharts.chart('container2', {
+                
+                title: {
+                    text: 'Electricity use trends & forecast'
+                },
+                subtitle: {
+                text: 'Singapore Energy Statistics 2023-EMA, BESS Report 2022-BCA & simulated in CEA',
+                style: {
+                    color: '#E0E0E3',
+                    textTransform: 'uppercase'
+                    }
+                },
+                xAxis: {
+                    title: {
+                    text: 'Year'
+                },
+                    categories: ['2018', '2019', '2020', '2030', '2040']
+                },
+                yAxis: {
+                title: {
+                    text: 'Electricity use [kWh]'
+                }
+                },
+                labels: {
+                    items: [{
+                        html: 'Electricity use [kWh]',
+                        style: {
+                            left: '250px',
+                            top: '10px',
+                            color: ( // theme
+                                Highcharts.defaultOptions.title.style &&
+                                Highcharts.defaultOptions.title.style.color
+                            ) || 'black'
+                        }
+                    }]
+                },
+                series: [{
+                    type: 'column',
+                    name: 'Scenario 1: Low Energy-Use',
+                    data: [E_2018, E_2019, E_2020, E_2020*0.75, E_2020*0.5] 
+                }, {
+                    type: 'column',
+                    name: 'Scenario 2: High Energy-Use',
+                    data: [E_2018, E_2019, E_2020, E_2020*1.25, E_2020*1.5]
+                }, {
+                    type: 'spline',
+                    name: 'Baseline: Current trend',
+                    dashStyle: 'Dash',
+                    data: [E_2018, E_2019, E_2020, E_2020*0.9, E_2020*0.75],
+                    marker: {
+                        lineWidth: 2,
+                        lineColor: Highcharts.getOptions().colors[3],
+                        fillColor: 'white'
+                    }
+                }]
+                });}
+
+                viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(
+                Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK
+                );
+
+                $('#container1').show();
+                $('#container2').show();
+                $('#container3').show();
+                $('#container4').show();
+                $('#container5').show();
+
+                }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+            }, 5000);
+
+            function hideCharts() {
+                $('#container1').hide();
+                $('#container2').hide();
+                $('#container3').hide();
+                $('#container4').hide();
+                $('#container5').hide();
+                $('#legend1').show();
+                $('#legend2').show();
+            }
+
+            function showCharts() {
+                $('#container1').show();
+                $('#container2').show();
+                $('#container3').show();
+                $('#container4').show();
+                $('#container5').show();
+                $('#legend1').hide();
+                $('#legend2').hide();
+            }
+
+    </script>
+
+</body>
+</html>
