@@ -228,7 +228,6 @@
 }
 
 #container1 {
-  zoom: 80%;
   height: 300px;
 }
 
@@ -332,7 +331,6 @@
 }
 
 #container3 {
-  zoom: 80%;
   height: 300px;
 }
 
@@ -418,11 +416,10 @@
 }
 
 #container4 {
-  zoom: 80%;
   height: 300px;
 }
 
-.highcharts-figure4,
+.highcharts-figure4, 
 .highcharts-data-table table {
   position: absolute;
   top: 30px;
@@ -469,7 +466,7 @@
 .my-legend1 {
   display: hidden;
   position: absolute;
-  width: 250px;
+  width: 280px;
   bottom: 20px; /*top: 470px*/
   right: 310px; /*left: 10px*/
   opacity: 0.8;

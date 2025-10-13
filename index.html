@@ -56,7 +56,7 @@
     <div>
     <div id="toolbar">
         <select class="cesium-button" id="scene" title="Select Scene">
-            <option value="0" selected>GHG emission</option>
+            <option value="0" selected>Whole life carbon assessment</option>
             <option value="1" >Potential for Intervention</option>
         </select>
         <table class="infoPanel">
@@ -250,20 +250,20 @@
         <div class="box" id="container4" style="display:none;"></div>
       </figure>
 
-      <figure class="highcharts-figure5">
+      <!-- <figure class="highcharts-figure5">
         <div class="box" id="container5" style="display:none;"></div>
-      </figure>
+      </figure> -->
 
       <figure class='my-legend1'>
-        <div id="legend1">
-          <div class='legend-title1' title="Legend - GHG emissions">Average monthly household GHG emissions</div>
+        <div id="legend1" style="display: none;">
+          <div class='legend-title1' title="Legend - GHG emissions">Annual operational GHG emissions intensity</div>
             <div class='legend-scale1'>
               <ul class='legend-labels1'>
-                <li><span style='background:#FF0000;'></span>Very high [Above 201 kg CO2e/kWh]</li>
-                <li><span style='background:#FFA500;'></span>High [187 - 201 kg CO2e/kWh]</li>
-                <li><span style='background:#FFFF00;'></span>Moderate [166 - 187 kg CO2e/kWh]</li>
-                <li><span style='background:#00FFFF;'></span>Low [135 - 166 kg CO2e/kWh]</li>
-                <li><span style='background:#0000FF;'></span>Very Low [Below 135 kg CO2e/kWh]</li>
+                <li><span style='background:#FF0000;'></span>Very high [Above 18.9 kg CO2e/m2.a]</li>
+                <li><span style='background:#FFA500;'></span>High [14.9 - 18.9 kg CO2e/m2.a]</li>
+                <li><span style='background:#FFFF00;'></span>Moderate [13.2 - 14.9 kg CO2e/m2.a]</li>
+                <li><span style='background:#00FFFF;'></span>Low [11.3 - 13.2 kg CO2e/m2.a]</li>
+                <li><span style='background:#0000FF;'></span>Very Low [Below 11.3 kg CO2e/m2.a]</li>
               </ul>
             </div>
         </div>
@@ -346,12 +346,39 @@
         var tileset = new Cesium.Cesium3DTileset({
             //url: "./tileset/tileset.json",
             //url: Cesium.IonResource.fromAssetId(1804651),
-            url: Cesium.IonResource.fromAssetId(2279028),
+            //url: Cesium.IonResource.fromAssetId(2279028),
+            url: Cesium.IonResource.fromAssetId(3557328),
         });
         viewer.scene.primitives.add(tileset);
 
+        tileset.style = new Cesium.Cesium3DTileStyle({
+                //show: "${feature['PLN_AREA_N']} === ''",
+                color: {
+                        conditions: [
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
+                            [true, "color('white', 0.3)"],  
+                        ],
+                    },
+                });
+
         Cesium.when(tileset.readyPromise).then(function (tileset) { viewer.flyTo(tileset) });
         //document.querySelector(".infoPanel").style.visibility = "hidden";
+
+        $('#container1').show();
+        $('#container2').show();
+        $('#container3').show();
+        $('#container4').show();
+        $('#PlanningArea').show();
+        $('#BuiltYear').show();
+        $('#Typology').show();
+        $('#legend1').show();
+        $('#legend2').hide();
 
         var viewModel = {
             age: ko.observable(1),
@@ -427,6 +454,9 @@
             document.querySelector(".infoPanel").style.visibility = "hidden";
             var PlanningArea = document.getElementById("PlanningArea");
             var BuiltYear = document.getElementById("BuiltYear");
+
+            $('#legend1').show();
+            $('#legend2').hide();
 
             PlanningArea.onchange = function () {
             viewer.entities.removeAll();
@@ -973,14 +1003,13 @@
                 //show: "${feature['PLN_AREA_N']} === ''",
                 color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1007,14 +1036,13 @@
                         show: "${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
                         color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1024,14 +1052,13 @@
                         show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 2024 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
                         color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1041,14 +1068,13 @@
                         show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 2010 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
                         color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1058,14 +1084,13 @@
                         show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 2000 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
                         color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1075,14 +1100,13 @@
                         show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 1990 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
                         color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1092,14 +1116,13 @@
                         show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 1980 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
                         color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1109,14 +1132,13 @@
                         show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 1970 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
                         color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1126,14 +1148,13 @@
                         show: "${feature['Typology']} === '"+String(BType)+"' && Number(${year}) < 1960 && ${feature['PLN_AREA_N']} === '"+String(PArea)+"'",
                         color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1143,14 +1164,13 @@
                         show: "Number(${HT}) < 500" ,
                         color: {
                         conditions: [
-                            // ["${QC_sys0_kW} >= 1500", "color('red')"],
-                            ['Number(${T_O_GHG_R}) >= 201', 'color("red")'],
-                            ['Number(${T_O_GHG_R}) > 187', "color('orange')"],
-                            ['Number(${T_O_GHG_R}) > 166', "color('yellow')"],
-                            ['Number(${T_O_GHG_R}) > 135', "color('cyan')"],
-                            ['Number(${T_O_GHG_R})> 0', "color('blue')"],
-                            ['Number(${T_O_GHG_R}) === null', 'color("black")'],
-                            ['Number(${T_O_GHG_R}) === undefined', 'color("black")'],
+                            ['Number(${O_GHGm2}) >= 18.9', 'color("red")'],
+                            ['Number(${O_GHGm2}) > 14.9', "color('orange')"],
+                            ['Number(${O_GHGm2}) > 13.2', "color('yellow')"],
+                            ['Number(${O_GHGm2}) > 11.3', "color('cyan')"],
+                            ['Number(${O_GHGm2})> 0', "color('blue')"],
+                            ['Number(${O_GHGm2}) === null', 'color("black")'],
+                            ['Number(${O_GHGm2}) === undefined', 'color("black")'],
                             [true, "color('white', 0.3)"],  
                         ],
                     },
@@ -1163,6 +1183,9 @@
 
         function colorByPotIntervention() {
             document.querySelector(".infoPanel").style.visibility = "hidden";
+
+            $('#legend1').hide();
+            $('#legend2').show();
 
             tileset.style = new Cesium.Cesium3DTileStyle({
             show: "Number(${HT}) > 0",
@@ -1463,11 +1486,31 @@
                 }
               
                 var B_year = Number(pickedFeature.getProperty("year"));
+                const currentYear = new Date().getFullYear();
+                var B_age = (currentYear - B_year);
                 var E_2018 = Number(pickedFeature.getProperty("EC_AM_2018"));
                 var E_2019 = Number(pickedFeature.getProperty("EC_AM_2019"));
                 var E_2020 = Number(pickedFeature.getProperty("EC_AM_2020"));
                 var E_2022 = Number(pickedFeature.getProperty("EC_AM_2022"));
+                var E_2023 = Number(pickedFeature.getProperty("EC_AM_2023"));
                 var E_2030 = E_2020 - (((E_2020 - E_2019))/E_2019);
+
+                var E_C = Number(pickedFeature.getProperty("E_GHG"));
+                var C_MIFC = Number(pickedFeature.getProperty("MIFC_kg/m2"));
+                C_MIFC = +C_MIFC.toFixed(2);
+                var C_MIFS = Number(pickedFeature.getProperty("MIFS_kg/m2"));
+                C_MIFS = +C_MIFS.toFixed(2);
+                var O_C = Number(pickedFeature.getProperty("O_GHG_egas"));
+                var E_O_C = (E_C+O_C).toFixed(1);
+
+                var O_C_E = Number(pickedFeature.getProperty("O_GHG"));
+                var O_C_G = Number(pickedFeature.getProperty("TGAS_O_GHG"));
+                var GFA = Number(pickedFeature.getProperty("GFA"));
+                GFA = +GFA.toFixed(2);
+                var E_C_MIFC = ((C_MIFC*GFA*0.236)/1000);
+                E_C_MIFC = +E_C_MIFC.toFixed(2);
+                var E_C_MIFS = ((C_MIFS*GFA*1.32)/1000);
+                E_C_MIFS = +E_C_MIFS.toFixed(2);
 
                 var R_1 = Number(pickedFeature.getProperty("1room_sold"));
                 var R_2 = Number(pickedFeature.getProperty("2room_sold"));
@@ -1512,102 +1555,6 @@
                 //console.log("Empty E_2020");
                 
                 const distchart1 = Highcharts.chart('container1', {
-                        chart: {
-                            type: 'cylinder',
-                            options3d: {
-                                enabled: true,
-                                alpha: 15,
-                                beta: 15,
-                                depth: 50,
-                                viewDistance: 25
-                            }
-                        },
-                        title: {
-                            text: 'CO\u2082e Dashboard - Built year :'+ B_year
-                        },
-                        subtitle: {
-                            text: 'Source: ' +
-                                '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
-                                'target="_blank">EMA, 2023</a>'
-                        },
-                        xAxis: {
-                            categories: ['CO\u2082', 'CH\u2084', 'N\u20820', 'SF\u2086', 'NF\u2083', 'PFCs', 'HFCs', 'Total CO\u2082e'],
-                            title: {
-                                text: 'Emission groups'
-                            }
-                        },
-                        yAxis: {
-                            title: {
-                                margin: 20,
-                                text: 'kg CO\u2082/kWh'
-                            }
-                        },
-                        tooltip: {
-                            headerFormat: '<b>Group: {point.x}</b><br>'
-                        },
-                        plotOptions: {
-                            series: {
-                                depth: 25,
-                                colorByPoint: true
-                            }
-                        },
-                        series: [{
-                            data: [E_2022*0.4057, (E_2022*0.00202*25), 0, 0, 0, 0, 0, (E_2022*0.4057)+(E_2022*0.00202*25)],
-                            name: 'kg CO\u2082/kWh',
-                            showInLegend: false
-                        }]
-                    });
-
-
-                    const distchart3 = Highcharts.chart('container3', {
-                        chart: {
-                            type: 'cylinder',
-                            options3d: {
-                                enabled: true,
-                                alpha: 15,
-                                beta: 15,
-                                depth: 50,
-                                viewDistance: 25
-                            }
-                        },
-                        title: {
-                            text: 'Aircon CO\u2082e'
-                        },
-                        subtitle: {
-                            text: 'Source: ' +
-                                '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
-                                'target="_blank">EMA, 2023</a>'
-                        },
-                        xAxis: {
-                            categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
-                            title: {
-                                text: 'CO\u2082e emission'
-                            }
-                        },
-                        yAxis: {
-                            title: {
-                                margin: 20,
-                                text: 'kg CO\u2082/kWh'
-                            }
-                        },
-                        tooltip: {
-                            headerFormat: '<b>Group: {point.x}</b><br>'
-                        },
-                        plotOptions: {
-                            series: {
-                                depth: 25,
-                                colorByPoint: true
-                            }
-                        },
-                        series: [{
-                            data: [R_1*0.0936, R_2*0.0936*2, R_3*0.0936*3, R_4*0.0936*4, R_5*0.0936*4, R_Ex*0.0936*4, ((R_1*0.0936)+(R_2*0.0936*2)+(R_3*0.0936*3)+(R_4*0.0936*4)+(R_5*0.0936*4)+(R_Ex*0.0936*4))],
-                            name: 'kg CO\u2082/kWh',
-                            showInLegend: false
-                        }]
-                    });
-
-
-                    const distchart4 = Highcharts.chart('container4', {
                     chart: {
                         type: 'cylinder',
                         options3d: {
@@ -1619,27 +1566,27 @@
                         }
                     },
                     title: {
-                        text: 'Refrigerator CO\u2082e'
+                        text: 'WLCA Dashboard - Built year :'+ B_year+', Age :'+B_age
                     },
                     subtitle: {
                         text: 'Source: ' +
                             '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
-                            'target="_blank">EMA, 2023</a>'
+                            'target="_blank">EMA, 2024</a>'
                     },
                     xAxis: {
-                        categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
+                        categories: ['Embodied', 'Operational', 'Total CO\u2082e'],
                         title: {
-                            text: 'CO\u2082e emission'
+                            text: 'Life cycle stages'
                         }
                     },
                     yAxis: {
                         title: {
                             margin: 20,
-                            text: 'kg CO\u2082/kWh'
+                            text: 'tonnes CO\u2082e'
                         }
                     },
                     tooltip: {
-                        headerFormat: '<b>Group: {point.x}</b><br>'
+                        headerFormat: '<b>Carbon emissions</b><br>'
                     },
                     plotOptions: {
                         series: {
@@ -1648,60 +1595,109 @@
                         }
                     },
                     series: [{
-                        data: [R_1*0.061, R_2*0.061, R_3*0.061, R_4*0.061, R_5*0.061, R_Ex*0.061, ((R_1*0.061)+(R_2*0.061)+(R_3*0.061)+(R_4*0.061)+(R_5*0.061)+(R_Ex*0.061))],
-                        name: 'kg CO\u2082/kWh',
+                        data: [E_C, O_C, E_C+O_C],
+                        name: 't CO\u2082e',
                         showInLegend: false
                     }]
                 });
 
-                const distchart5 = Highcharts.chart('container5', {
-                        chart: {
-                            type: 'cylinder',
-                            options3d: {
-                                enabled: true,
-                                alpha: 15,
-                                beta: 15,
-                                depth: 50,
-                                viewDistance: 25
-                            }
-                        },
-                        title: {
-                            text: 'Water Heater CO\u2082e'
-                        },
-                        subtitle: {
-                            text: 'Source: ' +
-                                '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
-                                'target="_blank">EMA, 2023</a>'
-                        },
-                        xAxis: {
-                            categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
-                            title: {
-                                text: 'CO\u2082e emission'
-                            }
-                        },
-                        yAxis: {
-                            title: {
-                                margin: 20,
-                                text: 'kg CO\u2082/kWh'
-                            }
-                        },
-                        tooltip: {
-                            headerFormat: '<b>Group: {point.x}</b><br>'
-                        },
-                        plotOptions: {
-                            series: {
-                                depth: 25,
-                                colorByPoint: true
-                            }
-                        },
-                        series: [{
-                            data: [R_1*0.03, R_2*0.03, R_3*0.03, R_4*0.03, R_5*0.03, R_Ex*0.03, ((R_1*0.03)+(R_2*0.03)+(R_3*0.03)+(R_4*0.03)+(R_5*0.03)+(R_Ex*0.03))],
-                            name: 'kg CO\u2082/kWh',
-                            showInLegend: false
-                        }]
-                    });
 
-                    Highcharts.chart('container2', {
+                const distchart3 = Highcharts.chart('container3', {
+                    chart: {
+                        type: 'cylinder',
+                        options3d: {
+                            enabled: true,
+                            alpha: 15,
+                            beta: 15,
+                            depth: 50,
+                            viewDistance: 25
+                        }
+                    },
+                    title: {
+                        text: 'Embodied Carbon (EC)'
+                    },
+                    subtitle: {
+                        text: 'Source: ' +
+                            '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                            'target="_blank">EMA, 2024</a>'
+                    },
+                    xAxis: {
+                        categories: ['Concrete','Steel', 'Total'],
+                        title: {
+                            text: 'CO\u2082e emission'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            margin: 20,
+                            text: 'tonnes CO\u2082e'
+                        }
+                    },
+                    tooltip: {
+                        headerFormat: '<b>Carbon emissions</b><br>'
+                    },
+                    plotOptions: {
+                        series: {
+                            depth: 25,
+                            colorByPoint: true
+                        }
+                    },
+                    series: [{
+                        data: [E_C_MIFC, E_C_MIFS, (E_C_MIFC+E_C_MIFS)],
+                        name: 'tonnes CO\u2082e',
+                        showInLegend: false
+                    }]
+                });
+
+
+                const distchart4 = Highcharts.chart('container4', {
+                    chart: {
+                        type: 'cylinder',
+                        options3d: {
+                            enabled: true,
+                            alpha: 15,
+                            beta: 15,
+                            depth: 50,
+                            viewDistance: 25
+                        }
+                    },
+                    title: {
+                        text: 'Operational Carbon (OC)'
+                    },
+                    subtitle: {
+                        text: 'Source: ' +
+                            '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
+                            'target="_blank">EMA, 2024</a>'
+                    },
+                    xAxis: {
+                        categories: ['Electricity', 'Town Gas', 'Total'],
+                        title: {
+                            text: 'CO\u2082e emission'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            margin: 20,
+                            text: 'tonnes CO\u2082e'
+                        }
+                    },
+                    tooltip: {
+                        headerFormat: '<b>Carbon emission</b><br>'
+                    },
+                    plotOptions: {
+                        series: {
+                            depth: 25,
+                            colorByPoint: true
+                        }
+                    },
+                    series: [{
+                        data: [O_C_E, O_C_G, O_C_E+O_C_G],
+                        name: 'tonnes CO\u2082e',
+                        showInLegend: false
+                    }]
+                });
+
+                Highcharts.chart('container2', {
                     
                     title: {
                         text: 'Electricity use trends & Forecast'
@@ -1773,27 +1769,27 @@
                         }
                     },
                     title: {
-                        text: 'CO\u2082e Dashboard - Built year :'+ B_year
+                        text: 'WLCA Dashboard - Built year :'+ B_year+', Age :'+B_age
                     },
                     subtitle: {
                         text: 'Source: ' +
                             '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
-                            'target="_blank">EMA, 2023</a>'
+                            'target="_blank">EMA, 2024</a>'
                     },
                     xAxis: {
-                        categories: ['CO\u2082e', 'CH\u2084', 'N\u20820', 'SF\u2086', 'NF\u2083', 'PFCs', 'HFCs', 'Total CO\u2082e'],
+                        categories: ['Embodied', 'Operational', 'Total CO\u2082e'],
                         title: {
-                            text: 'Emission groups'
+                            text: 'Life cycle stages'
                         }
                     },
                     yAxis: {
                         title: {
                             margin: 20,
-                            text: 'kg CO\u2082/kWh'
+                            text: 'tonnes CO\u2082e'
                         }
                     },
                     tooltip: {
-                        headerFormat: '<b>Group: {point.x}</b><br>'
+                        headerFormat: '<b>Carbon emissions</b><br>'
                     },
                     plotOptions: {
                         series: {
@@ -1802,11 +1798,12 @@
                         }
                     },
                     series: [{
-                        data: [E_2020*0.4057, (E_2020*0.00202*25), 0, 0, 0, 0, 0, (E_2020*0.4057)+(E_2020*0.00202*25)],
-                        name: 'kg CO\u2082/kWh',
+                        data: [E_C, O_C, E_C+O_C],
+                        name: 't CO\u2082e',
                         showInLegend: false
                     }]
                 });
+
 
                 const distchart3 = Highcharts.chart('container3', {
                     chart: {
@@ -1820,15 +1817,15 @@
                         }
                     },
                     title: {
-                        text: 'Aircon CO\u2082e Dashboard'
+                        text: 'Embodied Carbon (EC)'
                     },
                     subtitle: {
                         text: 'Source: ' +
                             '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
-                            'target="_blank">EMA, 2023</a>'
+                            'target="_blank">EMA, 2024</a>'
                     },
                     xAxis: {
-                        categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
+                        categories: ['Concrete','Steel', 'Total'],
                         title: {
                             text: 'CO\u2082e emission'
                         }
@@ -1836,11 +1833,11 @@
                     yAxis: {
                         title: {
                             margin: 20,
-                            text: 'kg CO\u2082/kWh'
+                            text: 'tonnes CO\u2082e'
                         }
                     },
                     tooltip: {
-                        headerFormat: '<b>Group: {point.x}</b><br>'
+                        headerFormat: '<b>Carbon emissions</b><br>'
                     },
                     plotOptions: {
                         series: {
@@ -1849,11 +1846,12 @@
                         }
                     },
                     series: [{
-                        data: [R_1*0.0936, R_2*0.0936*2, R_3*0.0936*3, R_4*0.0936*4, R_5*0.0936*4, R_Ex*0.0936*4, ((R_1*0.0936)+(R_2*0.0936*2)+(R_3*0.0936*3)+(R_4*0.0936*4)+(R_5*0.0936*4)+(R_Ex*0.0936*4))],
-                        name: 'kg CO\u2082/kWh',
+                        data: [E_C_MIFC, E_C_MIFS, (E_C_MIFC+E_C_MIFS)],
+                        name: 'tonnes CO\u2082e',
                         showInLegend: false
                     }]
                 });
+
 
                 const distchart4 = Highcharts.chart('container4', {
                     chart: {
@@ -1867,15 +1865,15 @@
                         }
                     },
                     title: {
-                        text: 'Refrigerator CO\u2082e'
+                        text: 'Operational Carbon (OC)'
                     },
                     subtitle: {
                         text: 'Source: ' +
                             '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
-                            'target="_blank">EMA, 2023</a>'
+                            'target="_blank">EMA, 2024</a>'
                     },
                     xAxis: {
-                        categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
+                        categories: ['Electricity', 'Town Gas', 'Total'],
                         title: {
                             text: 'CO\u2082e emission'
                         }
@@ -1883,11 +1881,11 @@
                     yAxis: {
                         title: {
                             margin: 20,
-                            text: 'kg CO\u2082/kWh'
+                            text: 'tonnes CO\u2082e'
                         }
                     },
                     tooltip: {
-                        headerFormat: '<b>Group: {point.x}</b><br>'
+                        headerFormat: '<b>Carbon emission</b><br>'
                     },
                     plotOptions: {
                         series: {
@@ -1896,58 +1894,11 @@
                         }
                     },
                     series: [{
-                        data: [R_1*0.061, R_2*0.061, R_3*0.061, R_4*0.061, R_5*0.061, R_Ex*0.061, ((R_1*0.061)+(R_2*0.061)+(R_3*0.061)+(R_4*0.061)+(R_5*0.061)+(R_Ex*0.061))],
-                        name: 'kg CO\u2082/kWh',
+                        data: [O_C_E, O_C_G, O_C_E+O_C_G],
+                        name: 'tonnes CO\u2082e',
                         showInLegend: false
                     }]
                 });
-
-                const distchart5 = Highcharts.chart('container5', {
-                        chart: {
-                            type: 'cylinder',
-                            options3d: {
-                                enabled: true,
-                                alpha: 15,
-                                beta: 15,
-                                depth: 50,
-                                viewDistance: 25
-                            }
-                        },
-                        title: {
-                            text: 'Water Heater CO\u2082e'
-                        },
-                        subtitle: {
-                            text: 'Source: ' +
-                                '<a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2"' +
-                                'target="_blank">EMA, 2023</a>'
-                        },
-                        xAxis: {
-                            categories: ['1Room', '2Room', '3Room', '4Room', '5Room', 'ExRoom', 'Total'],
-                            title: {
-                                text: 'CO\u2082e emission'
-                            }
-                        },
-                        yAxis: {
-                            title: {
-                                margin: 20,
-                                text: 'kg CO\u2082/kWh'
-                            }
-                        },
-                        tooltip: {
-                            headerFormat: '<b>Group: {point.x}</b><br>'
-                        },
-                        plotOptions: {
-                            series: {
-                                depth: 25,
-                                colorByPoint: true
-                            }
-                        },
-                        series: [{
-                            data: [R_1*0.03, R_2*0.03, R_3*0.03, R_4*0.03, R_5*0.03, R_Ex*0.03, ((R_1*0.03)+(R_2*0.03)+(R_3*0.03)+(R_4*0.03)+(R_5*0.03)+(R_Ex*0.03))],
-                            name: 'kg CO\u2082/kWh',
-                            showInLegend: false
-                        }]
-                    });
 
                 Highcharts.chart('container2', {
                 
@@ -2025,8 +1976,8 @@
                 $('#container3').hide();
                 $('#container4').hide();
                 $('#container5').hide();
-                $('#legend1').show();
-                $('#legend2').show();
+                $('#legend1').hide();
+                $('#legend2').hide();
             }
 
             function showCharts() {
@@ -2035,8 +1986,8 @@
                 $('#container3').show();
                 $('#container4').show();
                 $('#container5').show();
-                $('#legend1').hide();
-                $('#legend2').hide();
+                $('#legend1').show();
+                $('#legend2').show();
             }
 
     </script>
