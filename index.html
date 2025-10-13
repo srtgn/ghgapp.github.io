@@ -192,6 +192,15 @@
         </table>
       </div>
 
+      <div id="toolbar">
+        <select class="cesium-button9" id="Country" title="Select Country">
+          <option value="0" selected>Singapore</option>
+          <option value="1">Switzerland (not ready yet)</option>
+        </select>
+        <table class="infoPanel">
+        </table>
+      </div>
+
       <div id="slider" style="display: none;" title="Assign weightage for parameters">
         <table>
           <tbody>
@@ -457,6 +466,7 @@
 
             $('#legend1').show();
             $('#legend2').hide();
+            $('#slider').hide();
 
             PlanningArea.onchange = function () {
             viewer.entities.removeAll();
@@ -1186,6 +1196,7 @@
 
             $('#legend1').hide();
             $('#legend2').show();
+            $('#slider').show();
 
             tileset.style = new Cesium.Cesium3DTileStyle({
             show: "Number(${HT}) > 0",
