@@ -1745,12 +1745,15 @@
                 return;
             }
 
-            // Step 1: Calculate EC values for all buildings (in memory only, to get percentiles)
+            // Step 1: Clear old EC_Intensity values AND calculate new values (in memory)
             var ecValues = [];
             var featureECMap = new Map();
             
             for (var i = 0; i < allFeatures.length; i++) {
                 var feature = allFeatures[i];
+                // Clear any old EC_Intensity property from previous toggle
+                feature.setProperty('EC_Intensity', undefined);
+                // Calculate new value
                 var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
                 featureECMap.set(feature, ecIntensity);
                 if (ecIntensity > 0) ecValues.push(ecIntensity);
@@ -1821,8 +1824,6 @@
             processBatch();
         }
 
-        // Dummy block to match old code structure
-        if (false) {
                 var percentiles = useVariableConcreteCarbon ? varPercentiles : constPercentiles;
                 var propertyName = useVariableConcreteCarbon ? 'EC_Var' : 'EC_Const';
                 
