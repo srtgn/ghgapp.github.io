@@ -1715,10 +1715,12 @@
          */
         function processAllBuildingsAndUpdateColors() {
             var statusText = document.getElementById('toggleStatus');
+            var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
             
-            // Increment process ID to cancel any ongoing process
-            currentProcessId++;
+            // Use current process ID (set by toggle function)
             var myProcessId = currentProcessId;
+            
+            console.log('Starting ' + modeLabel + ' mode calculation, processId:', myProcessId);
             
             // Get all loaded tiles
             var loadedTiles = [];
@@ -1798,15 +1800,17 @@
                 
                 featureIdx = endIdx;
 
-                // Update progress
+                // Update progress with mode label
                 var percentage = Math.round((totalBuildingsProcessed / totalBuildingsToProcess) * 100);
+                statusText.textContent = percentage + '% - ' + modeLabel + ' mode';
                 updateProgress(totalBuildingsProcessed, totalBuildingsToProcess, percentage + '%');
 
                 // Process next batch
-                setTimeout(processBatch, 10); // 10ms between batches for smooth visual
+                setTimeout(processBatch, 10);
             }
 
             // Start processing immediately
+            statusText.textContent = '0% - ' + modeLabel + ' mode';
             processBatch();
         }
 
