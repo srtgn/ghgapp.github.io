@@ -1744,17 +1744,22 @@
 
             updateProgress(0, totalBuildingsToProcess, 'Calculating percentiles for ' + totalBuildingsToProcess + ' buildings...');
 
-            // FIRST PASS: Calculate all EC values quickly to determine percentiles
+            // FIRST PASS: Calculate all EC values and store them to determine percentiles
             var minEC = Infinity;
             var maxEC = -Infinity;
             var ecValues = [];
+            var featureECMap = new Map(); // Store feature -> EC value mapping
             
+            var allFeatures = [];
             for (var t = 0; t < loadedTiles.length; t++) {
                 var content = loadedTiles[t].content;
                 if (content && content.featuresLength) {
                     for (var f = 0; f < content.featuresLength; f++) {
                         var feature = content.getFeature(f);
+                        allFeatures.push(feature);
+                        
                         var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
+                        featureECMap.set(feature, ecIntensity);
                         
                         if (ecIntensity > 0) {
                             minEC = Math.min(minEC, ecIntensity);
@@ -1793,45 +1798,30 @@
             // Update legend immediately
             updateLegendForEmbodiedCarbon(p20, p40, p60, p80);
             
-            // SECOND PASS: Now set properties in batches - colors will appear gradually with correct colors
-            var tileIndex = 0;
-            var featureIndex = 0;
+            // SECOND PASS: Now set properties in batches using stored values
             totalBuildingsProcessed = 0;
+            var featureIdx = 0;
             var batchSize = 500; // Process 500 features per batch
 
             function processBatch() {
-                var processedInBatch = 0;
+                var endIdx = Math.min(featureIdx + batchSize, allFeatures.length);
                 
-                while (tileIndex < loadedTiles.length && processedInBatch < batchSize) {
-                    var content = loadedTiles[tileIndex].content;
+                for (var i = featureIdx; i < endIdx; i++) {
+                    var feature = allFeatures[i];
+                    var ecIntensity = featureECMap.get(feature);
                     
-                    if (content && content.featuresLength) {
-                        while (featureIndex < content.featuresLength && processedInBatch < batchSize) {
-                            var feature = content.getFeature(featureIndex);
-                            
-                            // Calculate and store the EC value
-                            var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
-                            feature.setProperty('EC_Intensity_Calc', ecIntensity);
-                            
-                            featureIndex++;
-                            totalBuildingsProcessed++;
-                            processedInBatch++;
-                        }
-                        
-                        if (featureIndex >= content.featuresLength) {
-                            featureIndex = 0;
-                            tileIndex++;
-                        }
-                    } else {
-                        tileIndex++;
-                    }
+                    // Set the pre-calculated value - triggers color change ONCE
+                    feature.setProperty('EC_Intensity_Calc', ecIntensity);
+                    totalBuildingsProcessed++;
                 }
 
                 // Update progress
                 var statusMsg = 'Coloring buildings: ' + totalBuildingsProcessed + ' / ' + totalBuildingsToProcess;
                 updateProgress(totalBuildingsProcessed, totalBuildingsToProcess, statusMsg);
 
-                if (tileIndex < loadedTiles.length) {
+                featureIdx = endIdx;
+                
+                if (featureIdx < allFeatures.length) {
                     // More to process, schedule next batch
                     setTimeout(processBatch, 10);
                 } else {
