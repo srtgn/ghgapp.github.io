@@ -1744,12 +1744,6 @@
 
             updateProgress(0, totalBuildingsToProcess, 'Calculating percentiles for ' + totalBuildingsToProcess + ' buildings...');
 
-            // Temporarily apply a style that doesn't read EC_Intensity_Calc to prevent intermediate color changes
-            // This ensures buildings keep their current colors while we set properties
-            tileset.style = new Cesium.Cesium3DTileStyle({
-                color: 'rgba(255, 255, 255, 0)' // Transparent - keeps current rendering
-            });
-
             // FIRST PASS: Calculate all EC values and store them to determine percentiles
             var minEC = Infinity;
             var maxEC = -Infinity;
@@ -1786,22 +1780,32 @@
             console.log('Embodied Carbon Stats - Min:', minEC.toFixed(2), 'Max:', maxEC.toFixed(2));
             console.log('Percentiles - P20:', p20.toFixed(2), 'P40:', p40.toFixed(2), 'P60:', p60.toFixed(2), 'P80:', p80.toFixed(2));
             
-            // Store the style to be applied AFTER setting all properties
-            var finalStyle = new Cesium.Cesium3DTileStyle({
+            // Apply the style NOW with EC color rules
+            // Buildings will keep their current O_GHGm2 colors until we set EC_Intensity_Calc on them
+            tileset.style = new Cesium.Cesium3DTileStyle({
                 color: {
                     conditions: [
+                        // If EC_Intensity_Calc exists, use it (new embodied carbon colors)
                         ['Number(${EC_Intensity_Calc}) >= ' + p80.toFixed(2), 'color("red")'],
                         ['Number(${EC_Intensity_Calc}) >= ' + p60.toFixed(2), "color('orange')"],
                         ['Number(${EC_Intensity_Calc}) >= ' + p40.toFixed(2), "color('yellow')"],
                         ['Number(${EC_Intensity_Calc}) >= ' + p20.toFixed(2), "color('cyan')"],
                         ['Number(${EC_Intensity_Calc}) > 0', "color('blue')"],
-                        ['Number(${EC_Intensity_Calc}) === 0', 'color("gray")'],
+                        // If EC_Intensity_Calc doesn't exist yet, fall back to O_GHGm2 (keep current colors)
+                        ['Number(${O_GHGm2}) >= 101.2', 'color("red")'],
+                        ['Number(${O_GHGm2}) > 62.9', "color('orange')"],
+                        ['Number(${O_GHGm2}) > 43.7', "color('yellow')"],
+                        ['Number(${O_GHGm2}) > 15.6', "color('cyan')"],
+                        ['Number(${O_GHGm2}) > 0', "color('blue')"],
                         [true, "color('white', 0.3)"],
                     ],
                 },
             });
             
-            // SECOND PASS: Set ALL properties first in batches, then apply style at the end
+            // Update legend immediately
+            updateLegendForEmbodiedCarbon(p20, p40, p60, p80);
+            
+            // SECOND PASS: Set properties gradually - each building changes color as we set its property
             totalBuildingsProcessed = 0;
             var featureIdx = 0;
             var batchSize = 500; // Process 500 features per batch
@@ -1813,13 +1817,13 @@
                     var feature = allFeatures[i];
                     var ecIntensity = featureECMap.get(feature);
                     
-                    // Set the pre-calculated value on the feature
+                    // Set the property - this triggers the color change for this building
                     feature.setProperty('EC_Intensity_Calc', ecIntensity);
                     totalBuildingsProcessed++;
                 }
 
                 // Update progress
-                var statusMsg = 'Processing: ' + totalBuildingsProcessed + ' / ' + totalBuildingsToProcess;
+                var statusMsg = 'Updating colors: ' + totalBuildingsProcessed + ' / ' + totalBuildingsToProcess;
                 updateProgress(totalBuildingsProcessed, totalBuildingsToProcess, statusMsg);
 
                 featureIdx = endIdx;
@@ -1828,9 +1832,7 @@
                     // More to process, schedule next batch
                     setTimeout(processBatch, 10);
                 } else {
-                    // ALL properties set - now apply the style ONCE
-                    tileset.style = finalStyle;
-                    updateLegendForEmbodiedCarbon(p20, p40, p60, p80);
+                    // All done
                     finishProcessing();
                 }
             }
