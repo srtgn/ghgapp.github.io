@@ -1698,7 +1698,19 @@
         }
 
         /**
-         * Calculate embodied carbon for each building and update colors gradually
+         * Get color based on EC intensity value (fixed thresholds)
+         */
+        function getColorForEC(ecIntensity) {
+            if (ecIntensity >= 200) return Cesium.Color.RED;
+            if (ecIntensity >= 150) return Cesium.Color.ORANGE;
+            if (ecIntensity >= 100) return Cesium.Color.YELLOW;
+            if (ecIntensity >= 50) return Cesium.Color.CYAN;
+            if (ecIntensity > 0) return Cesium.Color.BLUE;
+            return Cesium.Color.WHITE.withAlpha(0.3);
+        }
+
+        /**
+         * Calculate embodied carbon for each building and update colors one by one
          */
         function processAllBuildingsAndUpdateColors() {
             var statusText = document.getElementById('toggleStatus');
@@ -1739,33 +1751,13 @@
             totalBuildingsToProcess = allFeatures.length;
             
             if (totalBuildingsToProcess === 0) {
-                statusText.textContent = 'No buildings loaded yet. Try zooming in.';
+                statusText.textContent = 'No buildings visible. Try zooming in.';
                 hideProgress();
                 isProcessingToggle = false;
                 return;
             }
 
-            // Apply style with FIXED thresholds (no percentiles!)
-            tileset.style = new Cesium.Cesium3DTileStyle({
-                color: {
-                    conditions: [
-                        ['Number(${EC_Intensity}) >= 200', 'color("red")'],      // Very High
-                        ['Number(${EC_Intensity}) >= 150', "color('orange')"],   // High
-                        ['Number(${EC_Intensity}) >= 100', "color('yellow')"],   // Moderate
-                        ['Number(${EC_Intensity}) >= 50', "color('cyan')"],      // Low
-                        ['Number(${EC_Intensity}) > 0', "color('blue')"],        // Very Low
-                        // Fallback to O_GHGm2 if EC_Intensity not set yet
-                        ['Number(${O_GHGm2}) >= 101.2', 'color("red")'],
-                        ['Number(${O_GHGm2}) > 62.9', "color('orange')"],
-                        ['Number(${O_GHGm2}) > 43.7', "color('yellow')"],
-                        ['Number(${O_GHGm2}) > 15.6', "color('cyan')"],
-                        ['Number(${O_GHGm2}) > 0', "color('blue')"],
-                        [true, "color('white', 0.3)"],
-                    ],
-                },
-            });
-            
-            // Update legend with fixed thresholds
+            // Update legend immediately
             updateLegendForEmbodiedCarbon(50, 100, 150, 200);
             
             // Process buildings ONE by ONE
@@ -1780,11 +1772,11 @@
                 
                 var feature = allFeatures[featureIdx];
                 
-                // Calculate EC for this building
+                // Calculate EC for this building using current toggle mode
                 var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
                 
-                // Set property - this immediately updates the building's color
-                feature.setProperty('EC_Intensity', ecIntensity);
+                // Set the color DIRECTLY on this building - immediate visual update!
+                feature.color = getColorForEC(ecIntensity);
                 
                 totalBuildingsProcessed++;
                 featureIdx++;
@@ -1793,11 +1785,11 @@
                 var percentage = Math.round((totalBuildingsProcessed / totalBuildingsToProcess) * 100);
                 updateProgress(totalBuildingsProcessed, totalBuildingsToProcess, percentage + '%');
 
-                // Process next building
-                setTimeout(processOneBuilding, 1); // 1ms delay between buildings
+                // Process next building with small delay for visual effect
+                setTimeout(processOneBuilding, 2);
             }
 
-            // Start processing
+            // Start processing immediately
             processOneBuilding();
         }
 
