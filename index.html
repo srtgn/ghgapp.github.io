@@ -1629,6 +1629,9 @@
         var isProcessingToggle = false; // Prevent multiple simultaneous toggles
         var totalBuildingsProcessed = 0;
         var totalBuildingsToProcess = 0;
+        var ecValuesCalculated = false; // Track if both EC values have been stored
+        var constPercentiles = null; // Store constant method percentiles {p20, p40, p60, p80}
+        var varPercentiles = null; // Store variable method percentiles {p20, p40, p60, p80}
 
         /**
          * Get concrete embodied carbon factor based on building height
@@ -1698,13 +1701,49 @@
         }
 
         /**
-         * Process all loaded tiles and calculate embodied carbon for each building
-         * Then update the tileset style to color by embodied carbon
+         * Calculate and store BOTH constant and variable EC values on all buildings (first time only)
+         * Then switch the style to display the selected method
          */
         function processAllBuildingsAndUpdateColors() {
             var statusText = document.getElementById('toggleStatus');
             
-            // Get all tiles that are currently loaded
+            // If values are already calculated, just switch the style instantly
+            if (ecValuesCalculated) {
+                var percentiles = useVariableConcreteCarbon ? varPercentiles : constPercentiles;
+                var propertyName = useVariableConcreteCarbon ? 'EC_Var' : 'EC_Const';
+                
+                console.log('Switching to:', propertyName);
+                
+                // Apply new style instantly
+                tileset.style = new Cesium.Cesium3DTileStyle({
+                    color: {
+                        conditions: [
+                            ['Number(${' + propertyName + '}) >= ' + percentiles.p80.toFixed(2), 'color("red")'],
+                            ['Number(${' + propertyName + '}) >= ' + percentiles.p60.toFixed(2), "color('orange')"],
+                            ['Number(${' + propertyName + '}) >= ' + percentiles.p40.toFixed(2), "color('yellow')"],
+                            ['Number(${' + propertyName + '}) >= ' + percentiles.p20.toFixed(2), "color('cyan')"],
+                            ['Number(${' + propertyName + '}) > 0', "color('blue')"],
+                            ['Number(${' + propertyName + '}) === 0', 'color("gray")'],
+                            [true, "color('white', 0.3)"],
+                        ],
+                    },
+                });
+                
+                updateLegendForEmbodiedCarbon(percentiles.p20, percentiles.p40, percentiles.p60, percentiles.p80);
+                
+                var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
+                statusText.textContent = 'Switched to ' + modeLabel + ' mode';
+                hideProgress();
+                isProcessingToggle = false;
+                
+                // Update charts if needed
+                if (lastClickedFeature) {
+                    recalculateChartsForBuilding();
+                }
+                return;
+            }
+            
+            // FIRST TIME: Calculate and store both values
             var loadedTiles = [];
             var root = tileset.root;
             
@@ -1742,99 +1781,104 @@
                 return;
             }
 
+            statusText.textContent = 'Calculating both methods for ' + totalBuildingsToProcess + ' buildings...';
             updateProgress(0, totalBuildingsToProcess, '0%');
 
-            // Collect all features and calculate EC values
+            // Collect all features
             var allFeatures = [];
-            var ecValues = [];
-            var featureECMap = new Map();
-            var minEC = Infinity;
-            var maxEC = -Infinity;
-            
             for (var t = 0; t < loadedTiles.length; t++) {
                 var content = loadedTiles[t].content;
                 if (content && content.featuresLength) {
                     for (var f = 0; f < content.featuresLength; f++) {
-                        var feature = content.getFeature(f);
-                        allFeatures.push(feature);
-                        
-                        // Calculate EC value
-                        var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
-                        featureECMap.set(feature, ecIntensity);
-                        
-                        if (ecIntensity > 0) {
-                            minEC = Math.min(minEC, ecIntensity);
-                            maxEC = Math.max(maxEC, ecIntensity);
-                            ecValues.push(ecIntensity);
-                        }
+                        allFeatures.push(content.getFeature(f));
                     }
                 }
             }
             
-            // Calculate percentiles for color thresholds
-            ecValues.sort(function(a, b) { return a - b; });
-            var p20 = ecValues[Math.floor(ecValues.length * 0.2)] || 50;
-            var p40 = ecValues[Math.floor(ecValues.length * 0.4)] || 100;
-            var p60 = ecValues[Math.floor(ecValues.length * 0.6)] || 150;
-            var p80 = ecValues[Math.floor(ecValues.length * 0.8)] || 200;
+            // Calculate BOTH constant and variable values for all buildings
+            var constValues = [];
+            var varValues = [];
             
-            console.log('Embodied Carbon Stats - Min:', minEC.toFixed(2), 'Max:', maxEC.toFixed(2));
-            console.log('Percentiles - P20:', p20.toFixed(2), 'P40:', p40.toFixed(2), 'P60:', p60.toFixed(2), 'P80:', p80.toFixed(2));
-            
-            // Process buildings in batches and update colors gradually
-            totalBuildingsProcessed = 0;
-            var featureIdx = 0;
-            var batchSize = 500;
-            var styleApplied = false;
-
-            function processBatch() {
-                var endIdx = Math.min(featureIdx + batchSize, allFeatures.length);
+            for (var i = 0; i < allFeatures.length; i++) {
+                var feature = allFeatures[i];
                 
-                // Process this batch
-                for (var i = featureIdx; i < endIdx; i++) {
-                    var feature = allFeatures[i];
-                    var ecIntensity = featureECMap.get(feature);
-                    
-                    // Set the property - this will trigger color change after style is applied
-                    feature.setProperty('EC_Intensity_Calc', ecIntensity);
-                    totalBuildingsProcessed++;
-                }
+                // Calculate Constant EC
+                var C_MIFC = Number(feature.getProperty("MIFC_kg/m2")) || 0;
+                var C_MIFS = Number(feature.getProperty("MIFS_kg/m2")) || 0;
+                var constEC = (C_MIFC * 0.236) + (C_MIFS * 1.32);
                 
-                // After first batch, apply the style so subsequent batches will show color changes
-                if (!styleApplied) {
-                    tileset.style = new Cesium.Cesium3DTileStyle({
-                        color: {
-                            conditions: [
-                                ['Number(${EC_Intensity_Calc}) >= ' + p80.toFixed(2), 'color("red")'],
-                                ['Number(${EC_Intensity_Calc}) >= ' + p60.toFixed(2), "color('orange')"],
-                                ['Number(${EC_Intensity_Calc}) >= ' + p40.toFixed(2), "color('yellow')"],
-                                ['Number(${EC_Intensity_Calc}) >= ' + p20.toFixed(2), "color('cyan')"],
-                                ['Number(${EC_Intensity_Calc}) > 0', "color('blue')"],
-                                ['Number(${EC_Intensity_Calc}) === 0', 'color("gray")'],
-                                [true, "color('white', 0.3)"],
-                            ],
-                        },
-                    });
-                    updateLegendForEmbodiedCarbon(p20, p40, p60, p80);
-                    styleApplied = true;
+                // Calculate Variable EC
+                var buildingHeight = Number(feature.getProperty("HT")) || 0;
+                var varFactor = 0.236; // default
+                if (buildingHeight > 0) {
+                    if (buildingHeight < 20) varFactor = 0.20;
+                    else if (buildingHeight < 60) varFactor = 0.26;
+                    else varFactor = 0.32;
                 }
-
-                // Update progress
-                var percentage = Math.round((totalBuildingsProcessed / totalBuildingsToProcess) * 100);
-                var statusMsg = percentage + '% - Updating Embodied Carbon';
-                updateProgress(totalBuildingsProcessed, totalBuildingsToProcess, statusMsg);
-
-                featureIdx = endIdx;
+                var varEC = (C_MIFC * varFactor) + (C_MIFS * 1.32);
                 
-                if (featureIdx < allFeatures.length) {
-                    setTimeout(processBatch, 10);
-                } else {
-                    finishProcessing();
-                }
+                // Store BOTH values as permanent properties
+                feature.setProperty('EC_Const', constEC);
+                feature.setProperty('EC_Var', varEC);
+                
+                if (constEC > 0) constValues.push(constEC);
+                if (varEC > 0) varValues.push(varEC);
             }
-
-            // Start processing
-            processBatch();
+            
+            // Calculate and store percentiles for BOTH methods
+            constValues.sort(function(a, b) { return a - b; });
+            constPercentiles = {
+                p20: constValues[Math.floor(constValues.length * 0.2)] || 50,
+                p40: constValues[Math.floor(constValues.length * 0.4)] || 100,
+                p60: constValues[Math.floor(constValues.length * 0.6)] || 150,
+                p80: constValues[Math.floor(constValues.length * 0.8)] || 200
+            };
+            
+            varValues.sort(function(a, b) { return a - b; });
+            varPercentiles = {
+                p20: varValues[Math.floor(varValues.length * 0.2)] || 50,
+                p40: varValues[Math.floor(varValues.length * 0.4)] || 100,
+                p60: varValues[Math.floor(varValues.length * 0.6)] || 150,
+                p80: varValues[Math.floor(varValues.length * 0.8)] || 200
+            };
+            
+            ecValuesCalculated = true;
+            
+            // Apply style for the currently selected method
+            var percentiles = useVariableConcreteCarbon ? varPercentiles : constPercentiles;
+            var propertyName = useVariableConcreteCarbon ? 'EC_Var' : 'EC_Const';
+            
+            console.log('First calculation complete. Using:', propertyName);
+            console.log('Percentiles:', percentiles);
+            
+            tileset.style = new Cesium.Cesium3DTileStyle({
+                color: {
+                    conditions: [
+                        ['Number(${' + propertyName + '}) >= ' + percentiles.p80.toFixed(2), 'color("red")'],
+                        ['Number(${' + propertyName + '}) >= ' + percentiles.p60.toFixed(2), "color('orange')"],
+                        ['Number(${' + propertyName + '}) >= ' + percentiles.p40.toFixed(2), "color('yellow')"],
+                        ['Number(${' + propertyName + '}) >= ' + percentiles.p20.toFixed(2), "color('cyan')"],
+                        ['Number(${' + propertyName + '}) > 0', "color('blue')"],
+                        ['Number(${' + propertyName + '}) === 0', 'color("gray")'],
+                        [true, "color('white', 0.3)"],
+                    ],
+                },
+            });
+            
+            updateLegendForEmbodiedCarbon(percentiles.p20, percentiles.p40, percentiles.p60, percentiles.p80);
+            updateProgress(totalBuildingsToProcess, totalBuildingsToProcess, '100%');
+            
+            var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
+            statusText.textContent = 'Complete! Using ' + modeLabel + ' mode';
+            
+            setTimeout(function() {
+                hideProgress();
+                isProcessingToggle = false;
+                
+                if (lastClickedFeature) {
+                    recalculateChartsForBuilding();
+                }
+            }, 1000);
         }
 
         /**
