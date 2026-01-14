@@ -1742,14 +1742,9 @@
                 return;
             }
 
-            updateProgress(0, totalBuildingsToProcess, 'Calculating percentiles for ' + totalBuildingsToProcess + ' buildings...');
+            updateProgress(0, totalBuildingsToProcess, '0%');
 
-            // FIRST PASS: Calculate all EC values and store them to determine percentiles
-            var minEC = Infinity;
-            var maxEC = -Infinity;
-            var ecValues = [];
-            var featureECMap = new Map(); // Store feature -> EC value mapping
-            
+            // FIRST: Clear all existing EC_Intensity_Calc properties to prevent old values from triggering color changes
             var allFeatures = [];
             for (var t = 0; t < loadedTiles.length; t++) {
                 var content = loadedTiles[t].content;
@@ -1757,16 +1752,27 @@
                     for (var f = 0; f < content.featuresLength; f++) {
                         var feature = content.getFeature(f);
                         allFeatures.push(feature);
-                        
-                        var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
-                        featureECMap.set(feature, ecIntensity);
-                        
-                        if (ecIntensity > 0) {
-                            minEC = Math.min(minEC, ecIntensity);
-                            maxEC = Math.max(maxEC, ecIntensity);
-                            ecValues.push(ecIntensity);
-                        }
+                        // Clear any existing EC_Intensity_Calc from previous toggle
+                        feature.setProperty('EC_Intensity_Calc', undefined);
                     }
+                }
+            }
+
+            // SECOND: Calculate all EC values and store them to determine percentiles
+            var minEC = Infinity;
+            var maxEC = -Infinity;
+            var ecValues = [];
+            var featureECMap = new Map(); // Store feature -> EC value mapping
+            
+            for (var i = 0; i < allFeatures.length; i++) {
+                var feature = allFeatures[i];
+                var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
+                featureECMap.set(feature, ecIntensity);
+                
+                if (ecIntensity > 0) {
+                    minEC = Math.min(minEC, ecIntensity);
+                    maxEC = Math.max(maxEC, ecIntensity);
+                    ecValues.push(ecIntensity);
                 }
             }
             
@@ -1805,7 +1811,7 @@
             // Update legend immediately
             updateLegendForEmbodiedCarbon(p20, p40, p60, p80);
             
-            // SECOND PASS: Set properties gradually - each building changes color as we set its property
+            // THIRD PASS: Set properties gradually - each building changes color as we set its property
             totalBuildingsProcessed = 0;
             var featureIdx = 0;
             var batchSize = 500; // Process 500 features per batch
@@ -1822,8 +1828,9 @@
                     totalBuildingsProcessed++;
                 }
 
-                // Update progress
-                var statusMsg = 'Updating colors: ' + totalBuildingsProcessed + ' / ' + totalBuildingsToProcess;
+                // Update progress with percentage
+                var percentage = Math.round((totalBuildingsProcessed / totalBuildingsToProcess) * 100);
+                var statusMsg = percentage + '% - Updating Embodied Carbon';
                 updateProgress(totalBuildingsProcessed, totalBuildingsToProcess, statusMsg);
 
                 featureIdx = endIdx;
@@ -1847,7 +1854,7 @@
         function finishProcessing() {
             var statusText = document.getElementById('toggleStatus');
             var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
-            statusText.textContent = 'Complete! ' + totalBuildingsProcessed + ' buildings colored by Embodied Carbon (' + modeLabel + ' mode)';
+            statusText.textContent = '100% - Embodied Carbon Updated (' + modeLabel + ' mode)';
             
             console.log('All buildings colored with ' + modeLabel + ' concrete carbon factors');
             
@@ -2001,11 +2008,10 @@
             
             useVariableConcreteCarbon = newMode;
             
-            statusText.textContent = newMode ? 
-                'Switching to Variable mode - calculating...' : 
-                'Switching to Constant mode - calculating...';
+            var modeLabel = newMode ? 'Variable' : 'Constant';
+            statusText.textContent = '0% - Calculating ' + modeLabel + ' Embodied Carbon';
             
-            updateProgress(0, 100, 'Initializing...');
+            updateProgress(0, 100, '0%');
             
             // Small delay to allow UI to update before heavy processing
             setTimeout(function() {
