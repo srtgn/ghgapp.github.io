@@ -1629,6 +1629,7 @@
         var isProcessingToggle = false; // Prevent multiple simultaneous toggles
         var totalBuildingsProcessed = 0;
         var totalBuildingsToProcess = 0;
+        var currentProcessId = 0; // To cancel ongoing processes when toggle is switched
 
         /**
          * Get concrete embodied carbon factor based on building height
@@ -1710,10 +1711,14 @@
         }
 
         /**
-         * Calculate embodied carbon for each building and update colors one by one
+         * Calculate embodied carbon for each building and update colors in batches
          */
         function processAllBuildingsAndUpdateColors() {
             var statusText = document.getElementById('toggleStatus');
+            
+            // Increment process ID to cancel any ongoing process
+            currentProcessId++;
+            var myProcessId = currentProcessId;
             
             // Get all loaded tiles
             var loadedTiles = [];
@@ -1760,37 +1765,49 @@
             // Update legend immediately
             updateLegendForEmbodiedCarbon(50, 100, 150, 200);
             
-            // Process buildings ONE by ONE
+            // Process buildings in BATCHES for speed
             totalBuildingsProcessed = 0;
             var featureIdx = 0;
+            var batchSize = 50; // Process 50 buildings per frame
 
-            function processOneBuilding() {
+            function processBatch() {
+                // Check if this process was cancelled
+                if (myProcessId !== currentProcessId) {
+                    console.log('Process cancelled, starting new one...');
+                    return;
+                }
+                
                 if (featureIdx >= allFeatures.length) {
                     finishProcessing();
                     return;
                 }
                 
-                var feature = allFeatures[featureIdx];
+                // Process a batch of buildings
+                var endIdx = Math.min(featureIdx + batchSize, allFeatures.length);
+                for (var i = featureIdx; i < endIdx; i++) {
+                    var feature = allFeatures[i];
+                    
+                    // Calculate EC for this building
+                    var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
+                    
+                    // Set the color DIRECTLY - immediate visual update
+                    feature.color = getColorForEC(ecIntensity);
+                    
+                    totalBuildingsProcessed++;
+                }
                 
-                // Calculate EC for this building using current toggle mode
-                var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
-                
-                // Set the color DIRECTLY on this building - immediate visual update!
-                feature.color = getColorForEC(ecIntensity);
-                
-                totalBuildingsProcessed++;
-                featureIdx++;
+                featureIdx = endIdx;
 
                 // Update progress
                 var percentage = Math.round((totalBuildingsProcessed / totalBuildingsToProcess) * 100);
                 updateProgress(totalBuildingsProcessed, totalBuildingsToProcess, percentage + '%');
 
-                // Process next building with small delay for visual effect
-                setTimeout(processOneBuilding, 2);
+                // Process next batch
+                setTimeout(processBatch, 10); // 10ms between batches for smooth visual
             }
 
             // Start processing immediately
-            processOneBuilding();
+            processBatch();
         }
 
         /**
@@ -1917,26 +1934,25 @@
          * This processes ALL buildings and updates the map colors
          */
         function toggleConcreteCarbonMode() {
-            if (isProcessingToggle) {
-                console.log('Already processing, please wait...');
-                return;
-            }
+            // Cancel any ongoing process and start fresh
+            currentProcessId++;
             
             isProcessingToggle = true;
             var newMode = document.getElementById('concreteCarbonMode').checked;
             var statusText = document.getElementById('toggleStatus');
-            
+
             useVariableConcreteCarbon = newMode;
-            
+
             var modeLabel = newMode ? 'Variable' : 'Constant';
-            statusText.textContent = '0% - Calculating ' + modeLabel + ' Embodied Carbon';
-            
+            statusText.textContent = '0% - ' + modeLabel + ' mode';
+
+            // Reset progress bar
             updateProgress(0, 100, '0%');
-            
-            // Small delay to allow UI to update before heavy processing
+
+            // Start processing immediately
             setTimeout(function() {
                 processAllBuildingsAndUpdateColors();
-            }, 100);
+            }, 50);
         }
         // ===== END CONCRETE CARBON TOGGLE FUNCTIONALITY =====
 
