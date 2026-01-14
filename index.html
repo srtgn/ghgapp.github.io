@@ -1699,7 +1699,7 @@
         }
 
         /**
-         * Get color based on EC intensity value (fixed thresholds)
+         * Get color based on EC intensity value (fixed thresholds for Variable mode)
          */
         function getColorForEC(ecIntensity) {
             if (ecIntensity >= 200) return Cesium.Color.RED;
@@ -1707,6 +1707,18 @@
             if (ecIntensity >= 100) return Cesium.Color.YELLOW;
             if (ecIntensity >= 50) return Cesium.Color.CYAN;
             if (ecIntensity > 0) return Cesium.Color.BLUE;
+            return Cesium.Color.WHITE.withAlpha(0.3);
+        }
+
+        /**
+         * Get color based on O_GHGm2 (original operational GHG colors)
+         */
+        function getColorForOGHG(oGhgValue) {
+            if (oGhgValue >= 101.2) return Cesium.Color.RED;
+            if (oGhgValue > 62.9) return Cesium.Color.ORANGE;
+            if (oGhgValue > 43.7) return Cesium.Color.YELLOW;
+            if (oGhgValue > 15.6) return Cesium.Color.CYAN;
+            if (oGhgValue > 0) return Cesium.Color.BLUE;
             return Cesium.Color.WHITE.withAlpha(0.3);
         }
 
@@ -1764,8 +1776,12 @@
                 return;
             }
 
-            // Update legend immediately
-            updateLegendForEmbodiedCarbon(50, 100, 150, 200);
+            // Update legend based on mode
+            if (useVariableConcreteCarbon) {
+                updateLegendForEmbodiedCarbon(50, 100, 150, 200);
+            } else {
+                resetLegendToOperationalGHG();
+            }
             
             // Process buildings in BATCHES for speed
             totalBuildingsProcessed = 0;
@@ -1789,11 +1805,15 @@
                 for (var i = featureIdx; i < endIdx; i++) {
                     var feature = allFeatures[i];
                     
-                    // Calculate EC for this building
-                    var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
-                    
-                    // Set the color DIRECTLY - immediate visual update
-                    feature.color = getColorForEC(ecIntensity);
+                    if (useVariableConcreteCarbon) {
+                        // VARIABLE MODE: Calculate embodied carbon with height-based factors
+                        var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
+                        feature.color = getColorForEC(ecIntensity);
+                    } else {
+                        // CONSTANT MODE: Use original O_GHGm2 colors (operational GHG)
+                        var oGhgValue = Number(feature.getProperty("O_GHGm2")) || 0;
+                        feature.color = getColorForOGHG(oGhgValue);
+                    }
                     
                     totalBuildingsProcessed++;
                 }
@@ -1834,17 +1854,16 @@
         }
 
         /**
-         * Update legend with fixed embodied carbon thresholds
+         * Update legend with fixed embodied carbon thresholds (Variable mode)
          */
         function updateLegendForEmbodiedCarbon(low, moderate, high, veryHigh) {
             var legendDiv = document.getElementById('legend1');
             if (legendDiv) {
-                var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
                 var titleDiv = legendDiv.querySelector('.legend-title1');
                 var labelsUl = legendDiv.querySelector('.legend-labels1');
                 
                 if (titleDiv) {
-                    titleDiv.textContent = 'Embodied Carbon Intensity (' + modeLabel + ')';
+                    titleDiv.textContent = 'Embodied Carbon Intensity (Variable)';
                     titleDiv.title = 'Legend - Embodied Carbon';
                 }
                 
@@ -1855,6 +1874,31 @@
                         '<li><span style="background:#FFFF00;"></span>Moderate [' + moderate + ' - ' + high + ' kg CO2e/m2]</li>' +
                         '<li><span style="background:#00FFFF;"></span>Low [' + low + ' - ' + moderate + ' kg CO2e/m2]</li>' +
                         '<li><span style="background:#0000FF;"></span>Very Low [Below ' + low + ' kg CO2e/m2]</li>';
+                }
+            }
+        }
+
+        /**
+         * Reset legend to original operational GHG values (Constant mode)
+         */
+        function resetLegendToOperationalGHG() {
+            var legendDiv = document.getElementById('legend1');
+            if (legendDiv) {
+                var titleDiv = legendDiv.querySelector('.legend-title1');
+                var labelsUl = legendDiv.querySelector('.legend-labels1');
+                
+                if (titleDiv) {
+                    titleDiv.textContent = 'Annual operational GHG emissions intensity';
+                    titleDiv.title = 'Legend - GHG emissions';
+                }
+                
+                if (labelsUl) {
+                    labelsUl.innerHTML = 
+                        '<li><span style="background:#FF0000;"></span>Very high [Above 101.2 kg CO2e/m2.a]</li>' +
+                        '<li><span style="background:#FFA500;"></span>High [62.9 - 101.2 kg CO2e/m2.a]</li>' +
+                        '<li><span style="background:#FFFF00;"></span>Moderate [43.7 - 62.9 kg CO2e/m2.a]</li>' +
+                        '<li><span style="background:#00FFFF;"></span>Low [15.6 - 43.7 kg CO2e/m2.a]</li>' +
+                        '<li><span style="background:#0000FF;"></span>Very Low [Below 15.6 kg CO2e/m2.a]</li>';
                 }
             }
         }
