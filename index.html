@@ -1745,160 +1745,61 @@
                 return;
             }
 
-            // Step 1: Clear old EC_Intensity values AND calculate new values (in memory)
-            var ecValues = [];
-            var featureECMap = new Map();
-            
-            for (var i = 0; i < allFeatures.length; i++) {
-                var feature = allFeatures[i];
-                // Clear any old EC_Intensity property from previous toggle
-                feature.setProperty('EC_Intensity', undefined);
-                // Calculate new value
-                var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
-                featureECMap.set(feature, ecIntensity);
-                if (ecIntensity > 0) ecValues.push(ecIntensity);
-            }
-            
-            // Step 2: Calculate percentiles
-            ecValues.sort(function(a, b) { return a - b; });
-            var p20 = ecValues[Math.floor(ecValues.length * 0.2)] || 50;
-            var p40 = ecValues[Math.floor(ecValues.length * 0.4)] || 100;
-            var p60 = ecValues[Math.floor(ecValues.length * 0.6)] || 150;
-            var p80 = ecValues[Math.floor(ecValues.length * 0.8)] || 200;
-            
-            console.log('Percentiles - P20:', p20.toFixed(2), 'P40:', p40.toFixed(2), 'P60:', p60.toFixed(2), 'P80:', p80.toFixed(2));
-            
-            // Step 3: Apply style BEFORE setting any properties
+            // Apply style with FIXED thresholds (no percentiles!)
             tileset.style = new Cesium.Cesium3DTileStyle({
                 color: {
                     conditions: [
-                        ['Number(${EC_Intensity}) >= ' + p80.toFixed(2), 'color("red")'],
-                        ['Number(${EC_Intensity}) >= ' + p60.toFixed(2), "color('orange')"],
-                        ['Number(${EC_Intensity}) >= ' + p40.toFixed(2), "color('yellow')'],
-                        ['Number(${EC_Intensity}) >= ' + p20.toFixed(2), "color('cyan')'],
-                        ['Number(${EC_Intensity}) > 0', "color('blue')"],
-                        // Fallback to current O_GHGm2 colors if EC_Intensity not set
+                        ['Number(${EC_Intensity}) >= 200', 'color("red")'],      // Very High
+                        ['Number(${EC_Intensity}) >= 150', "color('orange')"],   // High
+                        ['Number(${EC_Intensity}) >= 100', "color('yellow')"],   // Moderate
+                        ['Number(${EC_Intensity}) >= 50', "color('cyan')"],      // Low
+                        ['Number(${EC_Intensity}) > 0', "color('blue')"],        // Very Low
+                        // Fallback to O_GHGm2 if EC_Intensity not set yet
                         ['Number(${O_GHGm2}) >= 101.2', 'color("red")'],
                         ['Number(${O_GHGm2}) > 62.9', "color('orange')"],
                         ['Number(${O_GHGm2}) > 43.7', "color('yellow')"],
-                        ['Number(${O_GHGm2}) > 15.6', "color('cyan')'],
+                        ['Number(${O_GHGm2}) > 15.6', "color('cyan')"],
                         ['Number(${O_GHGm2}) > 0', "color('blue')"],
                         [true, "color('white', 0.3)"],
                     ],
                 },
             });
             
-            updateLegendForEmbodiedCarbon(p20, p40, p60, p80);
+            // Update legend with fixed thresholds
+            updateLegendForEmbodiedCarbon(50, 100, 150, 200);
             
-            // Step 4: Process buildings in batches - setting EC_Intensity gradually
+            // Process buildings ONE by ONE
             totalBuildingsProcessed = 0;
             var featureIdx = 0;
-            var batchSize = 100; // Smaller batches for smoother visual update
 
-            function processBatch() {
-                var endIdx = Math.min(featureIdx + batchSize, allFeatures.length);
-                
-                for (var i = featureIdx; i < endIdx; i++) {
-                    var feature = allFeatures[i];
-                    var ecIntensity = featureECMap.get(feature);
-                    
-                    // Set the property - this triggers color change for this building
-                    feature.setProperty('EC_Intensity', ecIntensity);
-                    totalBuildingsProcessed++;
+            function processOneBuilding() {
+                if (featureIdx >= allFeatures.length) {
+                    finishProcessing();
+                    return;
                 }
+                
+                var feature = allFeatures[featureIdx];
+                
+                // Calculate EC for this building
+                var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
+                
+                // Set property - this immediately updates the building's color
+                feature.setProperty('EC_Intensity', ecIntensity);
+                
+                totalBuildingsProcessed++;
+                featureIdx++;
 
                 // Update progress
                 var percentage = Math.round((totalBuildingsProcessed / totalBuildingsToProcess) * 100);
                 updateProgress(totalBuildingsProcessed, totalBuildingsToProcess, percentage + '%');
 
-                featureIdx = endIdx;
-                
-                if (featureIdx < allFeatures.length) {
-                    setTimeout(processBatch, 5); // Small delay for smooth updates
-                } else {
-                    finishProcessing();
-                }
+                // Process next building
+                setTimeout(processOneBuilding, 1); // 1ms delay between buildings
             }
 
             // Start processing
-            processBatch();
-        }
+            processOneBuilding();
 
-
-        /**
-         * Finish processing - style is already applied, just cleanup
-         */
-        function finishProcessing() {
-            var statusText = document.getElementById('toggleStatus');
-            var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
-            statusText.textContent = '100% - Embodied Carbon Updated (' + modeLabel + ' mode)';
-            
-            console.log('All buildings colored with ' + modeLabel + ' concrete carbon factors');
-            
-            // Also update charts if a building was selected
-            if (lastClickedFeature) {
-                recalculateChartsForBuilding();
-            }
-            
-            hideProgress();
-            isProcessingToggle = false;
-        }
-
-        /**
-         * Update the legend to show embodied carbon values
-         */
-        function updateLegendForEmbodiedCarbon(p20, p40, p60, p80) {
-            var legendDiv = document.getElementById('legend1');
-            if (legendDiv) {
-                var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
-                var titleDiv = legendDiv.querySelector('.legend-title1');
-                var labelsUl = legendDiv.querySelector('.legend-labels1');
-                
-                if (titleDiv) {
-                    titleDiv.textContent = 'Embodied Carbon Intensity (' + modeLabel + ' mode)';
-                    titleDiv.title = 'Legend - Embodied Carbon';
-                }
-                
-                if (labelsUl) {
-                    labelsUl.innerHTML = 
-                        '<li><span style="background:#FF0000;"></span>Very high [Above ' + p80.toFixed(1) + ' kg CO2e/m2]</li>' +
-                        '<li><span style="background:#FFA500;"></span>High [' + p60.toFixed(1) + ' - ' + p80.toFixed(1) + ' kg CO2e/m2]</li>' +
-                        '<li><span style="background:#FFFF00;"></span>Moderate [' + p40.toFixed(1) + ' - ' + p60.toFixed(1) + ' kg CO2e/m2]</li>' +
-                        '<li><span style="background:#00FFFF;"></span>Low [' + p20.toFixed(1) + ' - ' + p40.toFixed(1) + ' kg CO2e/m2]</li>' +
-                        '<li><span style="background:#0000FF;"></span>Very Low [Below ' + p20.toFixed(1) + ' kg CO2e/m2]</li>';
-                }
-            }
-        }
-
-        /**
-         * Reset legend to original operational GHG values
-         */
-        function resetLegendToOperationalGHG() {
-            var legendDiv = document.getElementById('legend1');
-            if (legendDiv) {
-                var titleDiv = legendDiv.querySelector('.legend-title1');
-                var labelsUl = legendDiv.querySelector('.legend-labels1');
-                
-                if (titleDiv) {
-                    titleDiv.textContent = 'Annual operational GHG emissions intensity';
-                    titleDiv.title = 'Legend - GHG emissions';
-                }
-                
-                if (labelsUl) {
-                    labelsUl.innerHTML = 
-                        '<li><span style="background:#FF0000;"></span>Very high [Above 101.2 kg CO2e/m2.a]</li>' +
-                        '<li><span style="background:#FFA500;"></span>High [62.9 - 101.2 kg CO2e/m2.a]</li>' +
-                        '<li><span style="background:#FFFF00;"></span>Moderate [43.7 - 62.9 kg CO2e/m2.a]</li>' +
-                        '<li><span style="background:#00FFFF;"></span>Low [15.6 - 43.7 kg CO2e/m2.a]</li>' +
-                        '<li><span style="background:#0000FF;"></span>Very Low [Below 15.6 kg CO2e/m2.a]</li>';
-                }
-            }
-        }
-
-        /**
-         * Recalculate charts for the last clicked building
-         */
-        function recalculateChartsForBuilding() {
             if (!lastClickedFeature) return;
             
             var pickedFeature = lastClickedFeature;
