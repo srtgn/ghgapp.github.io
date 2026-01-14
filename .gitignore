@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build artifacts
+dist/script.js
+dist/script.js.map
+dist/style.css.map
+
+# Development files
+gulpfile.js
+*.backup
+*.original
+*.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*

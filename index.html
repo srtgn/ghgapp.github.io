@@ -12,6 +12,131 @@
   <link rel="stylesheet" href="dist/style.css">
   <link rel="stylesheet" href="dist/baseLayerPicker.css">
 
+  <style>
+    /* Concrete Carbon Toggle Container */
+    #concreteCarbonToggle {
+      position: absolute;
+      top: 0px;
+      left: 970px;
+      height: 30px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      font-family: sans-serif;
+      background-color: black;
+      color: white;
+      overflow: hidden;
+      opacity: 0.8;
+      border-radius: 4px;
+      white-space: nowrap;
+      z-index: 100;
+    }
+
+    #concreteCarbonToggle:hover {
+      border: 1px solid rgba(81, 203, 238, 1);
+      filter: brightness(120%);
+    }
+
+    /* Toggle Switch Styles */
+    .carbon-switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+      vertical-align: middle;
+      margin: 0 5px;
+    }
+    
+    .carbon-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .carbon-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 20px;
+    }
+    
+    .carbon-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .carbon-slider {
+      background-color: #4CAF50;
+    }
+    
+    input:checked + .carbon-slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Progress Bar Container */
+    #toggleProgressContainer {
+      position: absolute;
+      top: 32px;
+      left: 970px;
+      width: 280px;
+      height: 8px;
+      background-color: rgba(50, 50, 50, 0.9);
+      border-radius: 4px;
+      overflow: hidden;
+      display: none;
+      z-index: 100;
+      border: 1px solid #555;
+    }
+
+    #toggleProgressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A, #CDDC39);
+      border-radius: 3px;
+      transition: width 0.15s ease-out;
+      box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+    }
+
+    #toggleProgressContainer.visible {
+      display: block;
+    }
+
+    /* Status text under progress */
+    #toggleStatus {
+      position: absolute;
+      top: 42px;
+      left: 970px;
+      font-size: 10px;
+      color: #ccc;
+      font-family: sans-serif;
+      display: none;
+      z-index: 100;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 2px 6px;
+      border-radius: 3px;
+      max-width: 280px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #toggleStatus.visible {
+      display: block;
+    }
+  </style>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.0/knockout-min.js"></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
@@ -197,6 +322,19 @@
           <option value="0" selected>Singapore</option>
           <option value="1">Switzerland (not ready yet)</option>
         </select>
+        <div id="concreteCarbonToggle" title="Toggle between constant (0.236 kg CO₂e/kg) and variable concrete embodied carbon based on building height. Variable mode uses height-based factors: Low-rise (<20m): 0.20, Mid-rise (20-60m): 0.26, High-rise (>60m): 0.32 kg CO₂e/kg">
+          <span style="font-size: 11px; margin-right: 8px;">Concrete Carbon:</span>
+          <span style="font-size: 10px; margin-right: 5px;">Constant</span>
+          <label class="carbon-switch">
+            <input type="checkbox" id="concreteCarbonMode" onchange="toggleConcreteCarbonMode()">
+            <span class="carbon-slider"></span>
+          </label>
+          <span style="font-size: 10px; margin-left: 5px;">Variable</span>
+        </div>
+        <div id="toggleProgressContainer">
+          <div id="toggleProgressBar"></div>
+        </div>
+        <div id="toggleStatus">Switching calculation mode...</div>
         <table class="infoPanel">
         </table>
       </div>
@@ -1484,7 +1622,391 @@
         // Apply the theme
         Highcharts.setOptions(Highcharts.theme);
 
-        
+        // ===== CONCRETE CARBON TOGGLE FUNCTIONALITY =====
+        // Global variables for concrete carbon calculation
+        var useVariableConcreteCarbon = false; // Default to constant mode (0.236)
+        var lastClickedFeature = null; // Store the last clicked building feature
+        var isProcessingToggle = false; // Prevent multiple simultaneous toggles
+        var totalBuildingsProcessed = 0;
+        var totalBuildingsToProcess = 0;
+
+        /**
+         * Get concrete embodied carbon factor based on building height
+         */
+        function getConcreteCarbonFactor(buildingHeight) {
+            if (!useVariableConcreteCarbon) {
+                return 0.236; // Constant factor (original method)
+            }
+            if (!buildingHeight || buildingHeight <= 0) {
+                return 0.236; // Default to constant if height not available
+            }
+            if (buildingHeight < 20) {
+                return 0.20; // Low-rise
+            } else if (buildingHeight < 60) {
+                return 0.26; // Mid-rise
+            } else {
+                return 0.32; // High-rise
+            }
+        }
+
+        /**
+         * Calculate embodied carbon intensity (kg CO2e/m2) for a building
+         */
+        function calculateEmbodiedCarbonIntensity(feature) {
+            var C_MIFC = Number(feature.getProperty("MIFC_kg/m2")) || 0; // Concrete mass intensity
+            var C_MIFS = Number(feature.getProperty("MIFS_kg/m2")) || 0; // Steel mass intensity
+            var buildingHeight = Number(feature.getProperty("HT")) || 0;
+            
+            var concreteFactor = getConcreteCarbonFactor(buildingHeight);
+            var steelFactor = 1.32; // kg CO2e/kg for steel
+            
+            // Calculate embodied carbon intensity in kg CO2e/m2
+            var embodiedCarbonIntensity = (C_MIFC * concreteFactor) + (C_MIFS * steelFactor);
+            
+            return embodiedCarbonIntensity;
+        }
+
+        /**
+         * Update progress bar with real progress
+         */
+        function updateProgress(processed, total, statusMessage) {
+            var progressContainer = document.getElementById('toggleProgressContainer');
+            var progressBar = document.getElementById('toggleProgressBar');
+            var statusText = document.getElementById('toggleStatus');
+            
+            progressContainer.classList.add('visible');
+            statusText.classList.add('visible');
+            
+            var percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+            progressBar.style.width = percentage + '%';
+            statusText.textContent = statusMessage || ('Processing: ' + processed + ' / ' + total + ' buildings (' + percentage + '%)');
+        }
+
+        /**
+         * Hide progress bar
+         */
+        function hideProgress() {
+            var progressContainer = document.getElementById('toggleProgressContainer');
+            var progressBar = document.getElementById('toggleProgressBar');
+            var statusText = document.getElementById('toggleStatus');
+            
+            setTimeout(function() {
+                progressContainer.classList.remove('visible');
+                statusText.classList.remove('visible');
+                progressBar.style.width = '0%';
+            }, 1500);
+        }
+
+        /**
+         * Process all loaded tiles and calculate embodied carbon for each building
+         * Then update the tileset style to color by embodied carbon
+         */
+        function processAllBuildingsAndUpdateColors() {
+            var statusText = document.getElementById('toggleStatus');
+            
+            // Get all tiles that are currently loaded
+            var loadedTiles = [];
+            var root = tileset.root;
+            
+            if (!root) {
+                statusText.textContent = 'Waiting for tiles to load...';
+                return;
+            }
+
+            // Collect all loaded tiles recursively
+            function collectLoadedTiles(tile) {
+                if (tile.contentReady && tile.content) {
+                    loadedTiles.push(tile);
+                }
+                if (tile.children) {
+                    for (var i = 0; i < tile.children.length; i++) {
+                        collectLoadedTiles(tile.children[i]);
+                    }
+                }
+            }
+            collectLoadedTiles(root);
+
+            // Count total features
+            totalBuildingsToProcess = 0;
+            for (var t = 0; t < loadedTiles.length; t++) {
+                var content = loadedTiles[t].content;
+                if (content && content.featuresLength) {
+                    totalBuildingsToProcess += content.featuresLength;
+                }
+            }
+
+            if (totalBuildingsToProcess === 0) {
+                statusText.textContent = 'No buildings loaded yet. Try zooming in.';
+                hideProgress();
+                isProcessingToggle = false;
+                return;
+            }
+
+            updateProgress(0, totalBuildingsToProcess, 'Starting calculation for ' + totalBuildingsToProcess + ' buildings...');
+
+            // Process tiles in batches to avoid freezing the UI
+            var tileIndex = 0;
+            var featureIndex = 0;
+            totalBuildingsProcessed = 0;
+            var batchSize = 500; // Process 500 features per batch
+            var minEC = Infinity;
+            var maxEC = -Infinity;
+            var ecValues = [];
+
+            function processBatch() {
+                var processedInBatch = 0;
+                
+                while (tileIndex < loadedTiles.length && processedInBatch < batchSize) {
+                    var content = loadedTiles[tileIndex].content;
+                    
+                    if (content && content.featuresLength) {
+                        while (featureIndex < content.featuresLength && processedInBatch < batchSize) {
+                            var feature = content.getFeature(featureIndex);
+                            
+                            // Calculate embodied carbon intensity for this building
+                            var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
+                            
+                            // Store the calculated value as a property on the feature
+                            feature.setProperty('EC_Intensity_Calc', ecIntensity);
+                            
+                            // Track min/max for color scaling
+                            if (ecIntensity > 0) {
+                                minEC = Math.min(minEC, ecIntensity);
+                                maxEC = Math.max(maxEC, ecIntensity);
+                                ecValues.push(ecIntensity);
+                            }
+                            
+                            featureIndex++;
+                            totalBuildingsProcessed++;
+                            processedInBatch++;
+                        }
+                        
+                        if (featureIndex >= content.featuresLength) {
+                            featureIndex = 0;
+                            tileIndex++;
+                        }
+                    } else {
+                        tileIndex++;
+                    }
+                }
+
+                // Update progress
+                updateProgress(totalBuildingsProcessed, totalBuildingsToProcess);
+
+                if (tileIndex < loadedTiles.length) {
+                    // More to process, schedule next batch
+                    setTimeout(processBatch, 10);
+                } else {
+                    // All done, update the tileset style
+                    finishProcessing(minEC, maxEC, ecValues);
+                }
+            }
+
+            // Start processing
+            processBatch();
+        }
+
+        /**
+         * Finish processing and apply new color style based on embodied carbon
+         */
+        function finishProcessing(minEC, maxEC, ecValues) {
+            var statusText = document.getElementById('toggleStatus');
+            
+            // Calculate percentiles for better color distribution
+            ecValues.sort(function(a, b) { return a - b; });
+            var p20 = ecValues[Math.floor(ecValues.length * 0.2)] || 50;
+            var p40 = ecValues[Math.floor(ecValues.length * 0.4)] || 100;
+            var p60 = ecValues[Math.floor(ecValues.length * 0.6)] || 150;
+            var p80 = ecValues[Math.floor(ecValues.length * 0.8)] || 200;
+
+            console.log('Embodied Carbon Stats - Min:', minEC.toFixed(2), 'Max:', maxEC.toFixed(2));
+            console.log('Percentiles - P20:', p20.toFixed(2), 'P40:', p40.toFixed(2), 'P60:', p60.toFixed(2), 'P80:', p80.toFixed(2));
+
+            // Apply new style based on calculated embodied carbon intensity
+            tileset.style = new Cesium.Cesium3DTileStyle({
+                color: {
+                    conditions: [
+                        ['Number(${EC_Intensity_Calc}) >= ' + p80.toFixed(2), 'color("red")'],
+                        ['Number(${EC_Intensity_Calc}) >= ' + p60.toFixed(2), "color('orange')"],
+                        ['Number(${EC_Intensity_Calc}) >= ' + p40.toFixed(2), "color('yellow')"],
+                        ['Number(${EC_Intensity_Calc}) >= ' + p20.toFixed(2), "color('cyan')"],
+                        ['Number(${EC_Intensity_Calc}) > 0', "color('blue')"],
+                        ['Number(${EC_Intensity_Calc}) === 0', 'color("gray")'],
+                        [true, "color('white', 0.3)"],
+                    ],
+                },
+            });
+
+            // Update legend to show embodied carbon scale
+            updateLegendForEmbodiedCarbon(p20, p40, p60, p80);
+
+            var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
+            statusText.textContent = 'Complete! ' + totalBuildingsProcessed + ' buildings colored by Embodied Carbon (' + modeLabel + ' mode)';
+            
+            console.log('Tileset restyled with ' + modeLabel + ' concrete carbon factors');
+            
+            // Also update charts if a building was selected
+            if (lastClickedFeature) {
+                recalculateChartsForBuilding();
+            }
+            
+            hideProgress();
+            isProcessingToggle = false;
+        }
+
+        /**
+         * Update the legend to show embodied carbon values
+         */
+        function updateLegendForEmbodiedCarbon(p20, p40, p60, p80) {
+            var legendDiv = document.getElementById('legend1');
+            if (legendDiv) {
+                var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
+                var titleDiv = legendDiv.querySelector('.legend-title1');
+                var labelsUl = legendDiv.querySelector('.legend-labels1');
+                
+                if (titleDiv) {
+                    titleDiv.textContent = 'Embodied Carbon Intensity (' + modeLabel + ' mode)';
+                    titleDiv.title = 'Legend - Embodied Carbon';
+                }
+                
+                if (labelsUl) {
+                    labelsUl.innerHTML = 
+                        '<li><span style="background:#FF0000;"></span>Very high [Above ' + p80.toFixed(1) + ' kg CO2e/m2]</li>' +
+                        '<li><span style="background:#FFA500;"></span>High [' + p60.toFixed(1) + ' - ' + p80.toFixed(1) + ' kg CO2e/m2]</li>' +
+                        '<li><span style="background:#FFFF00;"></span>Moderate [' + p40.toFixed(1) + ' - ' + p60.toFixed(1) + ' kg CO2e/m2]</li>' +
+                        '<li><span style="background:#00FFFF;"></span>Low [' + p20.toFixed(1) + ' - ' + p40.toFixed(1) + ' kg CO2e/m2]</li>' +
+                        '<li><span style="background:#0000FF;"></span>Very Low [Below ' + p20.toFixed(1) + ' kg CO2e/m2]</li>';
+                }
+            }
+        }
+
+        /**
+         * Reset legend to original operational GHG values
+         */
+        function resetLegendToOperationalGHG() {
+            var legendDiv = document.getElementById('legend1');
+            if (legendDiv) {
+                var titleDiv = legendDiv.querySelector('.legend-title1');
+                var labelsUl = legendDiv.querySelector('.legend-labels1');
+                
+                if (titleDiv) {
+                    titleDiv.textContent = 'Annual operational GHG emissions intensity';
+                    titleDiv.title = 'Legend - GHG emissions';
+                }
+                
+                if (labelsUl) {
+                    labelsUl.innerHTML = 
+                        '<li><span style="background:#FF0000;"></span>Very high [Above 101.2 kg CO2e/m2.a]</li>' +
+                        '<li><span style="background:#FFA500;"></span>High [62.9 - 101.2 kg CO2e/m2.a]</li>' +
+                        '<li><span style="background:#FFFF00;"></span>Moderate [43.7 - 62.9 kg CO2e/m2.a]</li>' +
+                        '<li><span style="background:#00FFFF;"></span>Low [15.6 - 43.7 kg CO2e/m2.a]</li>' +
+                        '<li><span style="background:#0000FF;"></span>Very Low [Below 15.6 kg CO2e/m2.a]</li>';
+                }
+            }
+        }
+
+        /**
+         * Recalculate charts for the last clicked building
+         */
+        function recalculateChartsForBuilding() {
+            if (!lastClickedFeature) return;
+            
+            var pickedFeature = lastClickedFeature;
+            var B_year = Number(pickedFeature.getProperty("year"));
+            var currentYear = new Date().getFullYear();
+            var B_age = (currentYear - B_year);
+            var E_2018 = Number(pickedFeature.getProperty("EC_AM_2018"));
+            var E_2019 = Number(pickedFeature.getProperty("EC_AM_2019"));
+            var E_2020 = Number(pickedFeature.getProperty("EC_AM_2020"));
+            var E_2022 = Number(pickedFeature.getProperty("EC_AM_2022"));
+
+            var E_C = Number(pickedFeature.getProperty("E_GHG"));
+            var C_MIFC = Number(pickedFeature.getProperty("MIFC_kg/m2")) || 0;
+            var C_MIFS = Number(pickedFeature.getProperty("MIFS_kg/m2")) || 0;
+            var O_C = Number(pickedFeature.getProperty("O_GHG_egas"));
+            var O_C_E = Number(pickedFeature.getProperty("O_GHG"));
+            var O_C_G = Number(pickedFeature.getProperty("TGAS_O_GHG"));
+            var GFA = Number(pickedFeature.getProperty("GFA")) || 0;
+            
+            var buildingHeight = Number(pickedFeature.getProperty("HT")) || 0;
+            var concreteCarbonFactor = getConcreteCarbonFactor(buildingHeight);
+            
+            var E_C_MIFC = ((C_MIFC * GFA * concreteCarbonFactor) / 1000);
+            E_C_MIFC = +E_C_MIFC.toFixed(2);
+            var E_C_MIFS = ((C_MIFS * GFA * 1.32) / 1000);
+            E_C_MIFS = +E_C_MIFS.toFixed(2);
+
+            var modeText = useVariableConcreteCarbon ? 
+                ' (Variable: ' + concreteCarbonFactor.toFixed(3) + ' kg CO₂e/kg)' : 
+                ' (Constant: 0.236 kg CO₂e/kg)';
+
+            // Update container1 - WLCA Dashboard
+            Highcharts.chart('container1', {
+                chart: { type: 'cylinder', options3d: { enabled: true, alpha: 15, beta: 15, depth: 50, viewDistance: 25 } },
+                title: { text: 'WLCA Dashboard - Built year:' + B_year + ', Age:' + B_age + modeText },
+                subtitle: { text: 'Source: <a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2" target="_blank">EMA, 2024</a>' },
+                xAxis: { categories: ['Embodied', 'Operational', 'Total CO\u2082e'], title: { text: 'Life cycle stages' } },
+                yAxis: { title: { margin: 20, text: 'tonnes CO\u2082e' } },
+                tooltip: { headerFormat: '<b>Carbon emissions</b><br>' },
+                plotOptions: { series: { depth: 25, colorByPoint: true } },
+                series: [{ data: [E_C, O_C, E_C + O_C], name: 't CO\u2082e', showInLegend: false }]
+            });
+
+            // Update container3 - Embodied Carbon
+            Highcharts.chart('container3', {
+                chart: { type: 'cylinder', options3d: { enabled: true, alpha: 15, beta: 15, depth: 50, viewDistance: 25 } },
+                title: { text: 'Embodied Carbon (EC)' },
+                subtitle: { text: 'Source: <a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2" target="_blank">EMA, 2024</a>' },
+                xAxis: { categories: ['Concrete', 'Steel', 'Total'], title: { text: 'CO\u2082e emission' } },
+                yAxis: { title: { margin: 20, text: 'tonnes CO\u2082e' } },
+                tooltip: { headerFormat: '<b>Carbon emissions</b><br>' },
+                plotOptions: { series: { depth: 25, colorByPoint: true } },
+                series: [{ data: [E_C_MIFC, E_C_MIFS, (E_C_MIFC + E_C_MIFS)], name: 'tonnes CO\u2082e', showInLegend: false }]
+            });
+
+            // Update container4 - Operational Carbon
+            Highcharts.chart('container4', {
+                chart: { type: 'cylinder', options3d: { enabled: true, alpha: 15, beta: 15, depth: 50, viewDistance: 25 } },
+                title: { text: 'Operational Carbon (OC)' },
+                subtitle: { text: 'Source: <a href="https://www.ema.gov.sg/resources/singapore-energy-statistics/chapter2" target="_blank">EMA, 2024</a>' },
+                xAxis: { categories: ['Electricity', 'Town Gas', 'Total'], title: { text: 'CO\u2082e emission' } },
+                yAxis: { title: { margin: 20, text: 'tonnes CO\u2082e' } },
+                tooltip: { headerFormat: '<b>Carbon emission</b><br>' },
+                plotOptions: { series: { depth: 25, colorByPoint: true } },
+                series: [{ data: [O_C_E, O_C_G, O_C_E + O_C_G], name: 'tonnes CO\u2082e', showInLegend: false }]
+            });
+
+            console.log('Charts recalculated with ' + (useVariableConcreteCarbon ? 'Variable' : 'Constant') + ' mode. Factor: ' + concreteCarbonFactor.toFixed(3));
+        }
+
+        /**
+         * Toggle between constant and variable concrete carbon calculation
+         * This processes ALL buildings and updates the map colors
+         */
+        function toggleConcreteCarbonMode() {
+            if (isProcessingToggle) {
+                console.log('Already processing, please wait...');
+                return;
+            }
+            
+            isProcessingToggle = true;
+            var newMode = document.getElementById('concreteCarbonMode').checked;
+            var statusText = document.getElementById('toggleStatus');
+            
+            useVariableConcreteCarbon = newMode;
+            
+            statusText.textContent = newMode ? 
+                'Switching to Variable mode - calculating...' : 
+                'Switching to Constant mode - calculating...';
+            
+            updateProgress(0, 100, 'Initializing...');
+            
+            // Small delay to allow UI to update before heavy processing
+            setTimeout(function() {
+                processAllBuildingsAndUpdateColors();
+            }, 100);
+        }
+        // ===== END CONCRETE CARBON TOGGLE FUNCTIONALITY =====
 
         setTimeout(function(){
             handler.setInputAction(function onLeftClick(
@@ -1493,10 +2015,12 @@
                 // Pick a new feature
                 var pickedFeature = viewer.scene.pick(movement.position);
                 if (!Cesium.defined(pickedFeature)) {
-                clickHandler(movement);
                 return;
                 }
-              
+
+                // Store for toggle recalculation
+                lastClickedFeature = pickedFeature;
+
                 var B_year = Number(pickedFeature.getProperty("year"));
                 const currentYear = new Date().getFullYear();
                 var B_age = (currentYear - B_year);
@@ -1519,7 +2043,12 @@
                 var O_C_G = Number(pickedFeature.getProperty("TGAS_O_GHG"));
                 var GFA = Number(pickedFeature.getProperty("GFA"));
                 GFA = +GFA.toFixed(2);
-                var E_C_MIFC = ((C_MIFC*GFA*0.236)/1000);
+                
+                // Get building height and calculate concrete carbon factor based on toggle mode
+                var buildingHeight = Number(pickedFeature.getProperty("HT")) || 0;
+                var concreteCarbonFactor = getConcreteCarbonFactor(buildingHeight);
+                
+                var E_C_MIFC = ((C_MIFC*GFA*concreteCarbonFactor)/1000);
                 E_C_MIFC = +E_C_MIFC.toFixed(2);
                 var E_C_MIFS = ((C_MIFS*GFA*1.32)/1000);
                 E_C_MIFS = +E_C_MIFS.toFixed(2);
@@ -1566,6 +2095,10 @@
                 if (E_2020 === 0){
                 //console.log("Empty E_2020");
                 
+                var modeText = useVariableConcreteCarbon ? 
+                    ' (Variable: ' + concreteCarbonFactor.toFixed(3) + ' kg CO₂e/kg)' : 
+                    ' (Constant: 0.236 kg CO₂e/kg)';
+                
                 const distchart1 = Highcharts.chart('container1', {
                     chart: {
                         type: 'cylinder',
@@ -1578,7 +2111,7 @@
                         }
                     },
                     title: {
-                        text: 'WLCA Dashboard - Built year :'+ B_year+', Age :'+B_age
+                        text: 'WLCA Dashboard - Built year :'+ B_year+', Age :'+B_age + modeText
                     },
                     subtitle: {
                         text: 'Source: ' +
@@ -1769,6 +2302,10 @@
                 } if (E_2020 !== 0){
                 //console.log("E_2020 is not empty");
 
+                var modeText2 = useVariableConcreteCarbon ? 
+                    ' (Variable: ' + concreteCarbonFactor.toFixed(3) + ' kg CO₂e/kg)' : 
+                    ' (Constant: 0.236 kg CO₂e/kg)';
+
                 const distchart1 = Highcharts.chart('container1', {
                     chart: {
                         type: 'cylinder',
@@ -1781,7 +2318,7 @@
                         }
                     },
                     title: {
-                        text: 'WLCA Dashboard - Built year :'+ B_year+', Age :'+B_age
+                        text: 'WLCA Dashboard - Built year :'+ B_year+', Age :'+B_age + modeText2
                     },
                     subtitle: {
                         text: 'Source: ' +
