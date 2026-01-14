@@ -1629,9 +1629,6 @@
         var isProcessingToggle = false; // Prevent multiple simultaneous toggles
         var totalBuildingsProcessed = 0;
         var totalBuildingsToProcess = 0;
-        var ecValuesCalculated = false; // Track if both EC values have been stored
-        var constPercentiles = null; // Store constant method percentiles {p20, p40, p60, p80}
-        var varPercentiles = null; // Store variable method percentiles {p20, p40, p60, p80}
 
         /**
          * Get concrete embodied carbon factor based on building height
@@ -1701,14 +1698,131 @@
         }
 
         /**
-         * Calculate and store BOTH constant and variable EC values on all buildings (first time only)
-         * Then switch the style to display the selected method
+         * Calculate embodied carbon for each building and update colors gradually
          */
         function processAllBuildingsAndUpdateColors() {
             var statusText = document.getElementById('toggleStatus');
             
-            // If values are already calculated, just switch the style instantly
-            if (ecValuesCalculated) {
+            // Get all loaded tiles
+            var loadedTiles = [];
+            var root = tileset.root;
+            
+            if (!root) {
+                statusText.textContent = 'Waiting for tiles to load...';
+                return;
+            }
+
+            // Collect all loaded tiles recursively
+            function collectLoadedTiles(tile) {
+                if (tile.contentReady && tile.content) {
+                    loadedTiles.push(tile);
+                }
+                if (tile.children) {
+                    for (var i = 0; i < tile.children.length; i++) {
+                        collectLoadedTiles(tile.children[i]);
+                    }
+                }
+            }
+            collectLoadedTiles(root);
+
+            // Collect all features
+            var allFeatures = [];
+            for (var t = 0; t < loadedTiles.length; t++) {
+                var content = loadedTiles[t].content;
+                if (content && content.featuresLength) {
+                    for (var f = 0; f < content.featuresLength; f++) {
+                        allFeatures.push(content.getFeature(f));
+                    }
+                }
+            }
+
+            totalBuildingsToProcess = allFeatures.length;
+            
+            if (totalBuildingsToProcess === 0) {
+                statusText.textContent = 'No buildings loaded yet. Try zooming in.';
+                hideProgress();
+                isProcessingToggle = false;
+                return;
+            }
+
+            // Step 1: Calculate EC values for all buildings (in memory only, to get percentiles)
+            var ecValues = [];
+            var featureECMap = new Map();
+            
+            for (var i = 0; i < allFeatures.length; i++) {
+                var feature = allFeatures[i];
+                var ecIntensity = calculateEmbodiedCarbonIntensity(feature);
+                featureECMap.set(feature, ecIntensity);
+                if (ecIntensity > 0) ecValues.push(ecIntensity);
+            }
+            
+            // Step 2: Calculate percentiles
+            ecValues.sort(function(a, b) { return a - b; });
+            var p20 = ecValues[Math.floor(ecValues.length * 0.2)] || 50;
+            var p40 = ecValues[Math.floor(ecValues.length * 0.4)] || 100;
+            var p60 = ecValues[Math.floor(ecValues.length * 0.6)] || 150;
+            var p80 = ecValues[Math.floor(ecValues.length * 0.8)] || 200;
+            
+            console.log('Percentiles - P20:', p20.toFixed(2), 'P40:', p40.toFixed(2), 'P60:', p60.toFixed(2), 'P80:', p80.toFixed(2));
+            
+            // Step 3: Apply style BEFORE setting any properties
+            tileset.style = new Cesium.Cesium3DTileStyle({
+                color: {
+                    conditions: [
+                        ['Number(${EC_Intensity}) >= ' + p80.toFixed(2), 'color("red")'],
+                        ['Number(${EC_Intensity}) >= ' + p60.toFixed(2), "color('orange')"],
+                        ['Number(${EC_Intensity}) >= ' + p40.toFixed(2), "color('yellow')'],
+                        ['Number(${EC_Intensity}) >= ' + p20.toFixed(2), "color('cyan')'],
+                        ['Number(${EC_Intensity}) > 0', "color('blue')"],
+                        // Fallback to current O_GHGm2 colors if EC_Intensity not set
+                        ['Number(${O_GHGm2}) >= 101.2', 'color("red")'],
+                        ['Number(${O_GHGm2}) > 62.9', "color('orange')"],
+                        ['Number(${O_GHGm2}) > 43.7', "color('yellow')"],
+                        ['Number(${O_GHGm2}) > 15.6', "color('cyan')'],
+                        ['Number(${O_GHGm2}) > 0', "color('blue')"],
+                        [true, "color('white', 0.3)"],
+                    ],
+                },
+            });
+            
+            updateLegendForEmbodiedCarbon(p20, p40, p60, p80);
+            
+            // Step 4: Process buildings in batches - setting EC_Intensity gradually
+            totalBuildingsProcessed = 0;
+            var featureIdx = 0;
+            var batchSize = 100; // Smaller batches for smoother visual update
+
+            function processBatch() {
+                var endIdx = Math.min(featureIdx + batchSize, allFeatures.length);
+                
+                for (var i = featureIdx; i < endIdx; i++) {
+                    var feature = allFeatures[i];
+                    var ecIntensity = featureECMap.get(feature);
+                    
+                    // Set the property - this triggers color change for this building
+                    feature.setProperty('EC_Intensity', ecIntensity);
+                    totalBuildingsProcessed++;
+                }
+
+                // Update progress
+                var percentage = Math.round((totalBuildingsProcessed / totalBuildingsToProcess) * 100);
+                updateProgress(totalBuildingsProcessed, totalBuildingsToProcess, percentage + '%');
+
+                featureIdx = endIdx;
+                
+                if (featureIdx < allFeatures.length) {
+                    setTimeout(processBatch, 5); // Small delay for smooth updates
+                } else {
+                    finishProcessing();
+                }
+            }
+
+            // Start processing
+            processBatch();
+        }
+
+        // Dummy block to match old code structure
+        if (false) {
                 var percentiles = useVariableConcreteCarbon ? varPercentiles : constPercentiles;
                 var propertyName = useVariableConcreteCarbon ? 'EC_Var' : 'EC_Const';
                 
