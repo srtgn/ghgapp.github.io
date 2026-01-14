@@ -1744,6 +1744,12 @@
 
             updateProgress(0, totalBuildingsToProcess, 'Calculating percentiles for ' + totalBuildingsToProcess + ' buildings...');
 
+            // Temporarily apply a style that doesn't read EC_Intensity_Calc to prevent intermediate color changes
+            // This ensures buildings keep their current colors while we set properties
+            tileset.style = new Cesium.Cesium3DTileStyle({
+                color: 'rgba(255, 255, 255, 0)' // Transparent - keeps current rendering
+            });
+
             // FIRST PASS: Calculate all EC values and store them to determine percentiles
             var minEC = Infinity;
             var maxEC = -Infinity;
