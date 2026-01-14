@@ -1799,7 +1799,57 @@
 
             // Start processing
             processOneBuilding();
+        }
 
+        /**
+         * Finish processing - cleanup and update charts
+         */
+        function finishProcessing() {
+            var statusText = document.getElementById('toggleStatus');
+            var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
+            statusText.textContent = '100% - Updated (' + modeLabel + ')';
+            
+            console.log('All buildings colored with ' + modeLabel + ' mode');
+            
+            // Update charts if a building was selected
+            if (lastClickedFeature) {
+                recalculateChartsForBuilding();
+            }
+            
+            hideProgress();
+            isProcessingToggle = false;
+        }
+
+        /**
+         * Update legend with fixed embodied carbon thresholds
+         */
+        function updateLegendForEmbodiedCarbon(low, moderate, high, veryHigh) {
+            var legendDiv = document.getElementById('legend1');
+            if (legendDiv) {
+                var modeLabel = useVariableConcreteCarbon ? 'Variable' : 'Constant';
+                var titleDiv = legendDiv.querySelector('.legend-title1');
+                var labelsUl = legendDiv.querySelector('.legend-labels1');
+                
+                if (titleDiv) {
+                    titleDiv.textContent = 'Embodied Carbon Intensity (' + modeLabel + ')';
+                    titleDiv.title = 'Legend - Embodied Carbon';
+                }
+                
+                if (labelsUl) {
+                    labelsUl.innerHTML = 
+                        '<li><span style="background:#FF0000;"></span>Very high [Above ' + veryHigh + ' kg CO2e/m2]</li>' +
+                        '<li><span style="background:#FFA500;"></span>High [' + high + ' - ' + veryHigh + ' kg CO2e/m2]</li>' +
+                        '<li><span style="background:#FFFF00;"></span>Moderate [' + moderate + ' - ' + high + ' kg CO2e/m2]</li>' +
+                        '<li><span style="background:#00FFFF;"></span>Low [' + low + ' - ' + moderate + ' kg CO2e/m2]</li>' +
+                        '<li><span style="background:#0000FF;"></span>Very Low [Below ' + low + ' kg CO2e/m2]</li>';
+                }
+            }
+        }
+
+        /**
+         * Recalculate charts for the last clicked building
+         */
+        function recalculateChartsForBuilding() {
             if (!lastClickedFeature) return;
             
             var pickedFeature = lastClickedFeature;
