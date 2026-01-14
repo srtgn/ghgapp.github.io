@@ -1822,8 +1822,12 @@
             console.log('Embodied Carbon Stats - Min:', minEC.toFixed(2), 'Max:', maxEC.toFixed(2));
             console.log('Percentiles - P20:', p20.toFixed(2), 'P40:', p40.toFixed(2), 'P60:', p60.toFixed(2), 'P80:', p80.toFixed(2));
 
-            // Apply new style based on calculated embodied carbon intensity
-            tileset.style = new Cesium.Cesium3DTileStyle({
+            // Store the calculated percentiles globally for use by new tiles
+            window.ecPercentiles = { p20: p20, p40: p40, p60: p60, p80: p80 };
+            window.useEmbodiedCarbonStyle = true;
+
+            // Create the style once
+            var ecStyle = new Cesium.Cesium3DTileStyle({
                 color: {
                     conditions: [
                         ['Number(${EC_Intensity_Calc}) >= ' + p80.toFixed(2), 'color("red")'],
@@ -1836,6 +1840,9 @@
                     ],
                 },
             });
+
+            // Apply the style once - Cesium will handle the rendering
+            tileset.style = ecStyle;
 
             // Update legend to show embodied carbon scale
             updateLegendForEmbodiedCarbon(p20, p40, p60, p80);
@@ -2000,6 +2007,11 @@
                 'Switching to Constant mode - calculating...';
             
             updateProgress(0, 100, 'Initializing...');
+            
+            // Apply a neutral style during processing to prevent intermediate color changes
+            tileset.style = new Cesium.Cesium3DTileStyle({
+                color: 'color("gray", 0.5)'
+            });
             
             // Small delay to allow UI to update before heavy processing
             setTimeout(function() {
